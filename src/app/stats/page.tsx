@@ -11,38 +11,89 @@ const DynamicDoughnut = dynamic(
   { ssr: false }
 );
 
+interface Product {
+  name: string;
+  price: number;
+}
+
+interface Sale {
+  product: Product;
+  amount: number;
+}
+
 const StatsPage: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [timeFrame, setTimeFrame] = useState<"week" | "month" | "year">("week");
+  const [salesData, setSalesData] = useState<Sale[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [averageRevenue, setAverageRevenue] = useState(0);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  const doughnutData = {
-    labels: ["Torta", "Kolač", "Sladoled", "Kafa"],
-    datasets: [
-      {
-        data: [12, 19, 3, 5],
-        backgroundColor: [
-          "rgba(255, 99, 132, 0.8)",
-          "rgba(54, 162, 235, 0.8)",
-          "rgba(255, 206, 86, 0.8)",
-          "rgba(75, 192, 192, 0.8)",
-        ],
-      },
-    ],
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          `/api/stats?userId=1&timeFrame=${timeFrame}`
+        );
+        const data = await response.json();
+        setSalesData(data.sales);
+        setTotalRevenue(data.totalRevenue);
+        setAverageRevenue(data.averageRevenue);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
 
-  const salesData = [
-    { product: "Torta", quantity: 12, revenue: 1200 },
-    { product: "Kolač", quantity: 19, revenue: 950 },
-    { product: "Sladoled", quantity: 3, revenue: 150 },
-    { product: "Kafa", quantity: 5, revenue: 250 },
-  ];
+    fetchData();
+  }, [timeFrame]);
 
-  const totalRevenue = salesData.reduce((acc, item) => acc + item.revenue, 0);
-  const averageRevenue = totalRevenue / salesData.length;
+  // Group sales data by product name and sum their amounts
+  const groupedSalesData = React.useMemo(() => {
+    const saleCounts: Record<
+      string,
+      { product: Product; totalAmount: number }
+    > = {};
+
+    salesData.forEach((sale) => {
+      const productName = sale.product.name;
+      if (!saleCounts[productName]) {
+        saleCounts[productName] = { product: sale.product, totalAmount: 0 };
+      }
+      saleCounts[productName].totalAmount += sale.amount;
+    });
+
+    return Object.values(saleCounts);
+  }, [salesData]);
+
+  // Process the grouped sales data for the Doughnut chart
+  const doughnutData = React.useMemo(() => {
+    // Sort the products by sales count and take the top 4
+    const sortedProducts = groupedSalesData
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .slice(0, 4);
+
+    // Extract labels and data for the Doughnut chart
+    const labels = sortedProducts.map(({ product }) => product.name);
+    const data = sortedProducts.map(({ totalAmount }) => totalAmount);
+
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: [
+            "rgba(255, 99, 132, 0.8)",
+            "rgba(54, 162, 235, 0.8)",
+            "rgba(255, 206, 86, 0.8)",
+            "rgba(75, 192, 192, 0.8)",
+          ],
+        },
+      ],
+    };
+  }, [groupedSalesData]);
 
   return (
     <div className="bg-gray-100 min-h-screen p-4">
@@ -94,12 +145,14 @@ const StatsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {salesData.map((item, index) => (
+                  {groupedSalesData.map((item, index) => (
                     <tr key={index} className="border-b">
-                      <td className="py-2 px-4">{item.product}</td>
-                      <td className="text-right py-2 px-4">{item.quantity}</td>
+                      <td className="py-2 px-4">{item.product.name}</td>
                       <td className="text-right py-2 px-4">
-                        {item.revenue} RSD
+                        {item.totalAmount}
+                      </td>
+                      <td className="text-right py-2 px-4">
+                        {item.totalAmount * item.product.price} RSD
                       </td>
                     </tr>
                   ))}

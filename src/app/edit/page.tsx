@@ -3,13 +3,19 @@
 import React, { useState, useEffect } from "react";
 import { FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
 interface MenuItem {
+  id: number;
   name: string;
 }
 
 interface MenuSection {
+  id: number;
   name: string;
-  items: MenuItem[];
+  products: MenuItem[];
 }
 
 interface EditingItem {
@@ -17,31 +23,6 @@ interface EditingItem {
   itemIndex: number;
   value: string;
 }
-
-const mockData: { companyName: string; menuSections: MenuSection[] } = {
-  companyName: "Candyland",
-  menuSections: [
-    {
-      name: "Torte",
-      items: [
-        { name: "Čokoladna torta" },
-        { name: "Voćna torta" },
-        { name: "Cheesecake" },
-      ],
-    },
-    {
-      name: "Kolači",
-      items: [{ name: "Baklava" }, { name: "Tulumbe" }, { name: "Krempita" }],
-    },
-    {
-      name: "Sladoledi",
-      items: [{ name: "Vanila" }, { name: "Jagoda" }, { name: "Čokolada" }],
-    },
-  ],
-};
-
-const fetchData = (): Promise<typeof mockData> =>
-  new Promise((resolve) => setTimeout(() => resolve(mockData), 1000));
 
 const EditPage: React.FC = () => {
   const [companyName, setCompanyName] = useState<string>("");
@@ -54,34 +35,90 @@ const EditPage: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchData().then((data) => {
-      setCompanyName(data.companyName);
-      setMenuSections(data.menuSections);
-      setIsLoading(false);
-    });
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/categories");
+        const data = await response.json();
+        setMenuSections(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const addMenuItem = (sectionIndex: number, item: string): void => {
-    setMenuSections((prev) =>
-      prev.map((section, idx) =>
-        idx === sectionIndex
-          ? { ...section, items: [...section.items, { name: item }] }
-          : section
-      )
-    );
+  const addMenuItem = async (
+    sectionIndex: number,
+    item: string,
+    price: number
+  ): Promise<void> => {
+    const categoryId = menuSections[sectionIndex].id;
+    console.log(categoryId);
+
+    const userId = 1;
+
+    try {
+      const response = await fetch("/api/addProduct", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ categoryId, productName: item, price, userId }),
+      });
+
+      if (response.ok) {
+        const newProduct = await response.json();
+        setMenuSections((prev) =>
+          prev.map((section, idx) =>
+            idx === sectionIndex
+              ? { ...section, products: [...section.products, newProduct] }
+              : section
+          )
+        );
+      } else {
+        console.error("Failed to add product:", response.status);
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+    }
   };
 
-  const removeMenuItem = (sectionIndex: number, itemIndex: number): void => {
-    setMenuSections((prev) =>
-      prev.map((section, idx) =>
-        idx === sectionIndex
-          ? {
-              ...section,
-              items: section.items.filter((_, i) => i !== itemIndex),
-            }
-          : section
-      )
-    );
+  const removeMenuItem = async (
+    sectionIndex: number,
+    itemIndex: number
+  ): Promise<void> => {
+    const section = menuSections[sectionIndex];
+    const productToDelete = section.products[itemIndex];
+
+    try {
+      const response = await fetch("/api/deleteProduct", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: productToDelete.id }),
+      });
+
+      if (response.ok) {
+        setMenuSections((prev) =>
+          prev.map((section, idx) =>
+            idx === sectionIndex
+              ? {
+                  ...section,
+                  products: section.products.filter((_, i) => i !== itemIndex),
+                }
+              : section
+          )
+        );
+      } else {
+        console.error("Failed to remove product:", response.status);
+      }
+    } catch (error) {
+      console.error("Error removing product:", error);
+    }
   };
 
   const startEditing = (
@@ -92,22 +129,48 @@ const EditPage: React.FC = () => {
     setEditingItem({ sectionIndex, itemIndex, value });
   };
 
-  const finishEditing = (): void => {
+  const finishEditing = async (): Promise<void> => {
     if (editingItem.sectionIndex !== -1 && editingItem.itemIndex !== -1) {
-      setMenuSections((prev) =>
-        prev.map((section, sIdx) =>
-          sIdx === editingItem.sectionIndex
-            ? {
-                ...section,
-                items: section.items.map((item, iIdx) =>
-                  iIdx === editingItem.itemIndex
-                    ? { name: editingItem.value }
-                    : item
-                ),
-              }
-            : section
-        )
-      );
+      const section = menuSections[editingItem.sectionIndex];
+
+      const productToUpdate = section.products[editingItem.itemIndex];
+      const productId = productToUpdate.id;
+      const updatedProduct = {
+        id: productId,
+        name: editingItem.value,
+      };
+
+      try {
+        const response = await fetch("/api/updateProduct", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedProduct),
+        });
+
+        if (response.ok) {
+          const updatedProductData = await response.json();
+          setMenuSections((prev) =>
+            prev.map((section, sIdx) =>
+              sIdx === editingItem.sectionIndex
+                ? {
+                    ...section,
+                    products: section.products.map((item, iIdx) =>
+                      iIdx === editingItem.itemIndex
+                        ? updatedProductData // Replace with updated product data
+                        : item
+                    ),
+                  }
+                : section
+            )
+          );
+        } else {
+          console.error("Failed to update product:", response.status);
+        }
+      } catch (error) {
+        console.error("Error updating product:", error);
+      }
     }
     setEditingItem({ sectionIndex: -1, itemIndex: -1, value: "" });
   };
@@ -156,7 +219,7 @@ const EditPage: React.FC = () => {
                   {section.name}
                 </h5>
                 <ul className="mb-2 text-sm">
-                  {section.items.map((item, itemIndex) => (
+                  {section.products.map((item, itemIndex) => (
                     <li
                       key={itemIndex}
                       className="flex items-center justify-between py-1"
@@ -231,7 +294,11 @@ const EditPage: React.FC = () => {
                     className="flex-grow px-3 py-2 border border-blue-300 rounded-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-2 sm:mb-0"
                     onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
                       if (e.key === "Enter" && e.currentTarget.value) {
-                        addMenuItem(sectionIndex, e.currentTarget.value);
+                        addMenuItem(
+                          sectionIndex + 1,
+                          e.currentTarget.value,
+                          100
+                        );
                         e.currentTarget.value = "";
                       }
                     }}
@@ -243,7 +310,7 @@ const EditPage: React.FC = () => {
                         `input[placeholder="Dodaj ${section.name.toLowerCase()}"]`
                       ) as HTMLInputElement;
                       if (input.value) {
-                        addMenuItem(sectionIndex, input.value);
+                        addMenuItem(sectionIndex, input.value, 100);
                         input.value = "";
                       }
                     }}

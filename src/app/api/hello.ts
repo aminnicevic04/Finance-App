@@ -7,7 +7,11 @@ type Data = {
 
 export default function handler(
   req: NextApiRequest,
+<<<<<<< HEAD
   res: NextApiResponse<Data>,
+=======
+  res: NextApiResponse<Data>
+>>>>>>> hasan-branch
 ) {
   res.status(200).json({ name: "John Doe" });
 }

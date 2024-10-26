@@ -1,14 +1,6 @@
-import React, { useState, KeyboardEvent, ChangeEvent } from "react";
+import React, { useState, KeyboardEvent, ChangeEvent, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
-
-// Primer liste artikala
-const artikli = [
-  { id: 1, naziv: "Artikal 1", cena: 100 },
-  { id: 2, naziv: "Artikal 2", cena: 200 },
-  { id: 3, naziv: "Artikal 3", cena: 300 },
-  // Dodajte još artikala po potrebi
-];
 
 export default function Home() {
   const [trosak, setTrosak] = useState("");
@@ -16,8 +8,38 @@ export default function Home() {
   const [showTrosakPopup, setShowTrosakPopup] = useState(false);
   const [showProdajaPopup, setShowProdajaPopup] = useState(false);
   const [prodatiArtikli, setProdatiArtikli] = useState<
-    { id: number; kolicina: number }[]
+    { id: number; kolicina: number; prodId: number }[]
   >([]);
+
+  interface MenuItem {
+    id: number;
+    name: string;
+    price: number;
+  }
+
+  interface MenuSection {
+    id: number;
+    name: string;
+    products: MenuItem[];
+  }
+  const [menuSections, setMenuSections] = useState<MenuSection[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/categories");
+        const data = await response.json();
+        setMenuSections(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleTrosakSubmit = () => {
     if (Number(trosak) <= 0) {
@@ -27,42 +49,104 @@ export default function Home() {
     setShowTrosakPopup(true);
   };
 
-  const handleTrosakPotvrda = () => {
+  const handleTrosakPotvrda = async () => {
     if (!opisTroska) {
       toast.error("Unesite opis troška!");
       return;
     }
-    // Ovde biste sačuvali trošak i opis u bazu
-    console.log("Trošak:", trosak, "Opis:", opisTroska);
-    toast.success("Trošak je uspešno sačuvan!");
-    setTrosak("");
-    setOpisTroska("");
-    setShowTrosakPopup(false);
+
+    try {
+      // Pripremite podatke za slanje
+      const expenseData = {
+        amount: Number(trosak),
+        description: opisTroska,
+      };
+
+      // Pošaljite POST zahtev na backend
+      const response = await fetch("/api/expenses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(expenseData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Došlo je do greške prilikom čuvanja troška!");
+      }
+
+      const result = await response.json();
+
+      // Prikazujemo uspešnu poruku
+      toast.success("Trošak je uspešno sačuvan!");
+      console.log("Saved expense data:", result);
+
+      // Resetovanje polja nakon uspešnog unosa
+      setTrosak("");
+      setOpisTroska("");
+      setShowTrosakPopup(false);
+    } catch (error) {
+      toast.error("Došlo je do greške prilikom čuvanja troška!");
+      console.error("Error saving expense:", error);
+    }
   };
 
   const handleProdajaSubmit = () => {
     setShowProdajaPopup(true);
   };
 
-  const handleProdajaPotvrda = () => {
+  const handleProdajaPotvrda = async () => {
     if (prodatiArtikli.length === 0) {
       toast.error("Izaberite bar jedan artikal!");
       return;
     }
-    // Ovde biste sačuvali prodaju u bazu
-    console.log("Prodati artikli:", prodatiArtikli);
-    toast.success("Prodaja je uspešno sačuvana!");
-    setProdatiArtikli([]);
-    setShowProdajaPopup(false);
+
+    const validSales = prodatiArtikli.filter((artikal) => artikal.kolicina > 0);
+
+    if (validSales.length === 0) {
+      toast.error("Nema artikala za prodaju!");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/sales", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(validSales),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save sales data");
+      }
+
+      const result = await response.json();
+      toast.success("Prodaja je uspešno sačuvana!");
+      console.log("Saved sales data:", result);
+      setProdatiArtikli([]);
+      setShowProdajaPopup(false);
+    } catch (error) {
+      toast.error("Došlo je do greške prilikom čuvanja prodaje!");
+      console.error("Error saving sales:", error);
+    }
   };
 
-  const handleArtikalChange = (id: number, value: string) => {
+  const handleArtikalChange = (id: number, value: string, prodId: number) => {
     const kolicina = value === "" ? 0 : parseInt(value);
-    const noviProdatiArtikli = prodatiArtikli.filter((a) => a.id !== id);
-    if (kolicina > 0) {
-      noviProdatiArtikli.push({ id, kolicina });
-    }
-    setProdatiArtikli(noviProdatiArtikli);
+    setProdatiArtikli((prev) => {
+      const existingIndex = prev.findIndex((a) => a.id === id);
+
+      if (existingIndex !== -1) {
+        // Ako artikal već postoji, ažuriraj količinu
+        const updated = [...prev];
+        updated[existingIndex].kolicina = kolicina;
+        return updated;
+      } else {
+        // Ako artikal ne postoji, dodaj novi
+        return [...prev, { id, kolicina, prodId }];
+      }
+    });
   };
 
   const handleKeyPress = (
@@ -177,30 +261,37 @@ export default function Home() {
           >
             <div className="bg-white p-8 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
               <h2 className="text-2xl font-bold mb-4">Prodati Artikli</h2>
-              {artikli.map((artikal) => (
+              {menuSections.map((category) => (
                 <div
-                  key={artikal.id}
+                  key={category.id}
                   className="flex items-center justify-between mb-2"
                 >
-                  <span>
-                    {artikal.naziv} - {artikal.cena} RSD
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={
-                      prodatiArtikli.find((a) => a.id === artikal.id)
-                        ?.kolicina || ""
-                    }
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const value = e.target.value.replace(/[^0-9]/g, "");
-                      handleArtikalChange(artikal.id, value);
-                    }}
-                    onKeyPress={(e) => handleKeyPress(e, handleProdajaPotvrda)}
-                    className="w-20 px-2 py-1 border rounded text-right"
-                    placeholder="0"
-                  />
+                  {category.products.map((section, sectionIndex) => (
+                    <div key={section.id}>
+                      <span>
+                        {section.name} - {section.price} RSD
+                      </span>
+                      <span className="color-red">{section.id}</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={
+                          prodatiArtikli.find((a) => a.id === section.id)
+                            ?.kolicina || ""
+                        }
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          handleArtikalChange(section.id, value, section.id);
+                        }}
+                        onKeyPress={(e) =>
+                          handleKeyPress(e, handleProdajaPotvrda)
+                        }
+                        className="w-20 px-2 py-1 border rounded text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                  ))}
                 </div>
               ))}
               <div className="mt-4 flex justify-end space-x-2">
