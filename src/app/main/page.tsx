@@ -262,16 +262,18 @@ export default function Home() {
             <div className="bg-white p-8 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
               <h2 className="text-2xl font-bold mb-4">Prodati Artikli</h2>
               {menuSections.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex items-center justify-between mb-2"
-                >
-                  {category.products.map((section, sectionIndex) => (
-                    <div key={section.id}>
-                      <span>
+                <div key={category.id} className="mb-4">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {category.name}
+                  </h3>
+                  {category.products.map((section) => (
+                    <div
+                      key={section.id}
+                      className="flex justify-between items-center mb-2"
+                    >
+                      <span className="text-gray-700">
                         {section.name} - {section.price} RSD
                       </span>
-                      <span className="color-red">{section.id}</span>
                       <input
                         type="text"
                         inputMode="numeric"

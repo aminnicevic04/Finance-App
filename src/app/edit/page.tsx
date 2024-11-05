@@ -1,38 +1,37 @@
 "use client";
+import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Toaster, toast } from "react-hot-toast";
 
-import React, { useState, useEffect } from "react";
-import { FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
-
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-interface MenuItem {
-  id: number;
-  name: string;
-}
-
-interface MenuSection {
-  id: number;
-  name: string;
-  products: MenuItem[];
-}
-
-interface EditingItem {
-  sectionIndex: number;
-  itemIndex: number;
-  value: string;
-}
-
-const EditPage: React.FC = () => {
+export default function Home() {
   const [companyName, setCompanyName] = useState<string>("");
+  const [trosak, setTrosak] = useState("");
+  const [opisTroska, setOpisTroska] = useState("");
+  const [showTrosakPopup, setShowTrosakPopup] = useState(false);
+  const [showProdajaPopup, setShowProdajaPopup] = useState(false);
+  const [prodatiArtikli, setProdatiArtikli] = useState<
+    { id: number; kolicina: number; prodId: number }[]
+  >([]);
   const [menuSections, setMenuSections] = useState<MenuSection[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [editingItem, setEditingItem] = useState<EditingItem>({
-    sectionIndex: -1,
-    itemIndex: -1,
-    value: "",
-  });
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductPrice, setNewProductPrice] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+
+  interface MenuItem {
+    id: number;
+    name: string;
+    price: number;
+  }
+
+  interface MenuSection {
+    id: number;
+    name: string;
+    products: MenuItem[];
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,129 +49,185 @@ const EditPage: React.FC = () => {
     fetchData();
   }, []);
 
-  const addMenuItem = async (
-    sectionIndex: number,
-    item: string,
-    price: number
-  ): Promise<void> => {
-    const categoryId = menuSections[sectionIndex].id;
-    console.log(categoryId);
+  const handleTrosakSubmit = () => {
+    if (Number(trosak) <= 0) {
+      toast.error("Unesite validan iznos troška!");
+      return;
+    }
+    setShowTrosakPopup(true);
+  };
 
-    const userId = 1;
+  const handleTrosakPotvrda = async () => {
+    if (!opisTroska) {
+      toast.error("Unesite opis troška!");
+      return;
+    }
 
     try {
-      const response = await fetch("/api/addProduct", {
+      const expenseData = {
+        amount: Number(trosak),
+        description: opisTroska,
+      };
+
+      const response = await fetch("/api/expenses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ categoryId, productName: item, price, userId }),
+        body: JSON.stringify(expenseData),
       });
 
-      if (response.ok) {
-        const newProduct = await response.json();
-        setMenuSections((prev) =>
-          prev.map((section, idx) =>
-            idx === sectionIndex
-              ? { ...section, products: [...section.products, newProduct] }
-              : section
-          )
-        );
-      } else {
-        console.error("Failed to add product:", response.status);
+      if (!response.ok) {
+        throw new Error("Došlo je do greške prilikom čuvanja troška!");
       }
+
+      const result = await response.json();
+      toast.success("Trošak je uspešno sačuvan!");
+      console.log("Saved expense data:", result);
+
+      setTrosak("");
+      setOpisTroska("");
+      setShowTrosakPopup(false);
     } catch (error) {
-      console.error("Error adding product:", error);
+      toast.error("Došlo je do greške prilikom čuvanja troška!");
+      console.error("Error saving expense:", error);
     }
   };
 
-  const removeMenuItem = async (
-    sectionIndex: number,
-    itemIndex: number
-  ): Promise<void> => {
-    const section = menuSections[sectionIndex];
-    const productToDelete = section.products[itemIndex];
+  const handleProdajaSubmit = () => {
+    setShowProdajaPopup(true);
+  };
+
+  const handleProdajaPotvrda = async () => {
+    if (prodatiArtikli.length === 0) {
+      toast.error("Izaberite bar jedan artikal!");
+      return;
+    }
+
+    const validSales = prodatiArtikli.filter((artikal) => artikal.kolicina > 0);
+
+    if (validSales.length === 0) {
+      toast.error("Nema artikala za prodaju!");
+      return;
+    }
 
     try {
-      const response = await fetch("/api/deleteProduct", {
-        method: "DELETE",
+      const response = await fetch("/api/sales", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: productToDelete.id }),
+        body: JSON.stringify(validSales),
       });
 
-      if (response.ok) {
-        setMenuSections((prev) =>
-          prev.map((section, idx) =>
-            idx === sectionIndex
-              ? {
-                  ...section,
-                  products: section.products.filter((_, i) => i !== itemIndex),
-                }
-              : section
-          )
-        );
-      } else {
-        console.error("Failed to remove product:", response.status);
+      if (!response.ok) {
+        throw new Error("Failed to save sales data");
       }
+
+      const result = await response.json();
+      toast.success("Prodaja je uspešno sačuvana!");
+      console.log("Saved sales data:", result);
+      setProdatiArtikli([]);
+      setShowProdajaPopup(false);
     } catch (error) {
-      console.error("Error removing product:", error);
+      toast.error("Došlo je do greške prilikom čuvanja prodaje!");
+      console.error("Error saving sales:", error);
     }
   };
 
-  const startEditing = (
-    sectionIndex: number,
-    itemIndex: number,
-    value: string
-  ): void => {
-    setEditingItem({ sectionIndex, itemIndex, value });
-  };
+  const handleArtikalChange = (id: number, value: string, prodId: number) => {
+    const kolicina = value === "" ? 0 : parseInt(value);
+    setProdatiArtikli((prev) => {
+      const existingIndex = prev.findIndex((a) => a.id === id);
 
-  const finishEditing = async (): Promise<void> => {
-    if (editingItem.sectionIndex !== -1 && editingItem.itemIndex !== -1) {
-      const section = menuSections[editingItem.sectionIndex];
-
-      const productToUpdate = section.products[editingItem.itemIndex];
-      const productId = productToUpdate.id;
-      const updatedProduct = {
-        id: productId,
-        name: editingItem.value,
-      };
-
-      try {
-        const response = await fetch("/api/updateProduct", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updatedProduct),
-        });
-
-        if (response.ok) {
-          const updatedProductData = await response.json();
-          setMenuSections((prev) =>
-            prev.map((section, sIdx) =>
-              sIdx === editingItem.sectionIndex
-                ? {
-                    ...section,
-                    products: section.products.map((item, iIdx) =>
-                      iIdx === editingItem.itemIndex
-                        ? updatedProductData // Replace with updated product data
-                        : item
-                    ),
-                  }
-                : section
-            )
-          );
-        } else {
-          console.error("Failed to update product:", response.status);
-        }
-      } catch (error) {
-        console.error("Error updating product:", error);
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex].kolicina = kolicina;
+        return updated;
+      } else {
+        return [...prev, { id, kolicina, prodId }];
       }
+    });
+  };
+
+  const handleKeyPress = (
+    e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    action: () => void
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      action();
     }
-    setEditingItem({ sectionIndex: -1, itemIndex: -1, value: "" });
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName) {
+      toast.error("Unesite naziv kategorije!");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newCategoryName }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Došlo je do greške prilikom kreiranja kategorije!");
+      }
+
+      const newCategory = await response.json();
+      setMenuSections((prev) => [...prev, newCategory]);
+      setNewCategoryName("");
+      toast.success("Kategorija je uspešno kreirana!");
+    } catch (error) {
+      toast.error("Došlo je do greške prilikom kreiranja kategorije!");
+      console.error("Error creating category:", error);
+    }
+  };
+
+  const handleCreateProduct = async () => {
+    if (!newProductName || !newProductPrice || selectedCategoryId === null) {
+      toast.error("Unesite sve podatke o proizvodu!");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newProductName,
+          price: Number(newProductPrice),
+          categoryId: selectedCategoryId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Došlo je do greške prilikom kreiranja proizvoda!");
+      }
+
+      const newProduct = await response.json();
+      setMenuSections((prev) =>
+        prev.map((section) =>
+          section.id === selectedCategoryId
+            ? { ...section, products: [...section.products, newProduct] }
+            : section
+        )
+      );
+      setNewProductName("");
+      setNewProductPrice("");
+      setSelectedCategoryId(null);
+      toast.success("Proizvod je uspešno kreiran!");
+    } catch (error) {
+      toast.error("Došlo je do greške prilikom kreiranja proizvoda!");
+      console.error("Error creating product:", error);
+    }
   };
 
   if (isLoading)
@@ -184,7 +239,8 @@ const EditPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+      <Toaster position="top-right" />
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-8">
         <div className="bg-blue-600 p-4 sm:p-6 text-white text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold">Dobrodošli u</h1>
           <h2 className="text-xl sm:text-2xl font-bold mt-1">
@@ -208,127 +264,186 @@ const EditPage: React.FC = () => {
             />
           </div>
 
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold mb-2 text-gray-700">Meni</h4>
-            {menuSections.map((section, sectionIndex) => (
-              <div
-                key={sectionIndex}
-                className="mb-4 bg-gray-50 p-3 rounded-lg"
+          <div className="mt-8 space-y-6">
+            <div>
+              <label
+                htmlFor="newCategory"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
-                <h5 className="text-md font-medium mb-2 text-blue-700">
-                  {section.name}
-                </h5>
-                <ul className="mb-2 text-sm">
-                  {section.products.map((item, itemIndex) => (
-                    <li
-                      key={itemIndex}
-                      className="flex items-center justify-between py-1"
-                    >
-                      {editingItem.sectionIndex === sectionIndex &&
-                      editingItem.itemIndex === itemIndex ? (
-                        <input
-                          type="text"
-                          value={editingItem.value}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setEditingItem({
-                              ...editingItem,
-                              value: e.target.value,
-                            })
-                          }
-                          className="flex-grow px-2 py-1 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        />
-                      ) : (
-                        <span className="text-gray-600">{item.name}</span>
-                      )}
-                      <div className="flex space-x-2">
-                        {editingItem.sectionIndex === sectionIndex &&
-                        editingItem.itemIndex === itemIndex ? (
-                          <>
-                            <button
-                              onClick={finishEditing}
-                              className="text-green-500 hover:text-green-600 p-2"
-                            >
-                              <FiCheck size={24} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                setEditingItem({
-                                  sectionIndex: -1,
-                                  itemIndex: -1,
-                                  value: "",
-                                })
-                              }
-                              className="text-red-500 hover:text-red-600 p-2"
-                            >
-                              <FiX size={24} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() =>
-                                startEditing(sectionIndex, itemIndex, item.name)
-                              }
-                              className="text-blue-500 hover:text-blue-600 p-2"
-                            >
-                              <FiEdit2 size={20} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                removeMenuItem(sectionIndex, itemIndex)
-                              }
-                              className="text-red-500 hover:text-red-600 p-2"
-                            >
-                              <FiTrash2 size={20} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex flex-col sm:flex-row">
-                  <input
-                    type="text"
-                    placeholder={`Dodaj ${section.name.toLowerCase()}`}
-                    className="flex-grow px-3 py-2 border border-blue-300 rounded-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-2 sm:mb-0"
-                    onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                      if (e.key === "Enter" && e.currentTarget.value) {
-                        addMenuItem(
-                          sectionIndex + 1,
-                          e.currentTarget.value,
-                          100
-                        );
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                  />
-                  <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md sm:rounded-l-none hover:bg-blue-600 transition duration-200 text-sm"
-                    onClick={() => {
-                      const input = document.querySelector(
-                        `input[placeholder="Dodaj ${section.name.toLowerCase()}"]`
-                      ) as HTMLInputElement;
-                      if (input.value) {
-                        addMenuItem(sectionIndex, input.value, 100);
-                        input.value = "";
-                      }
-                    }}
-                  >
-                    Dodaj
-                  </button>
-                </div>
-              </div>
-            ))}
+                Nova Kategorija
+              </label>
+              <input
+                type="text"
+                id="newCategory"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, handleCreateCategory)}
+                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Unesite naziv kategorije i pritisnite Enter"
+              />
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCreateCategory}
+              className="w-full bg-purple-600 text-white py-3 px-4 rounded-md hover:bg-purple-700 transition duration-300 font-semibold"
+            >
+              Dodaj Kategoriju
+            </motion.button>
           </div>
 
-          <button className="w-full bg-blue-600 text-white px-4 py-3 rounded-md hover:bg-blue-700 transition duration-200 font-semibold text-sm">
-            Sačuvaj promene
-          </button>
+          <div className="mt-8 space-y-6">
+            <div>
+              <label
+                htmlFor="newProduct"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Novi Proizvod
+              </label>
+              <input
+                type="text"
+                id="newProduct"
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                placeholder="Unesite naziv proizvoda"
+              />
+              <input
+                type="number"
+                id="newProductPrice"
+                value={newProductPrice}
+                onChange={(e) => setNewProductPrice(e.target.value)}
+                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                placeholder="Unesite cenu proizvoda"
+              />
+              <select
+                id="categorySelect"
+                value={selectedCategoryId || ""}
+                onChange={(e) =>
+                  setSelectedCategoryId(Number(e.target.value) || null)
+                }
+                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Izaberite kategoriju</option>
+                {menuSections.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCreateProduct}
+              className="w-full bg-orange-600 text-white py-3 px-4 rounded-md hover:bg-orange-700 transition duration-300 font-semibold"
+            >
+              Dodaj Proizvod
+            </motion.button>
+          </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showTrosakPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          >
+            <div className="bg-white p-8 rounded-lg w-96">
+              <h2 className="text-2xl font-bold mb-4">Opis Troška</h2>
+              <textarea
+                value={opisTroska}
+                onChange={(e) => setOpisTroska(e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, handleTrosakPotvrda)}
+                className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none"
+                rows={4}
+                placeholder="Unesite opis troška i pritisnite Enter"
+              ></textarea>
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowTrosakPopup(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  Otkaži
+                </button>
+                <button
+                  onClick={handleTrosakPotvrda}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Potvrdi
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {showProdajaPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          >
+            <div className="bg-white p-8 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-4">Prodati Artikli</h2>
+              {menuSections.map((category) => (
+                <div key={category.id} className="mb-4">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {category.name}
+                  </h3>
+                  {category.products.map((section) => (
+                    <div
+                      key={section.id}
+                      className="flex justify-between items-center mb-2"
+                    >
+                      <span className="text-gray-700">
+                        {section.name} - {section.price} RSD
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={
+                          prodatiArtikli.find((a) => a.id === section.id)
+                            ?.kolicina || ""
+                        }
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          handleArtikalChange(section.id, value, section.id);
+                        }}
+                        onKeyPress={(e) =>
+                          handleKeyPress(e, handleProdajaPotvrda)
+                        }
+                        className="w-20 px-2 py-1 border rounded text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowProdajaPopup(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  Otkaži
+                </button>
+                <button
+                  onClick={handleProdajaPotvrda}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Potvrdi Prodaju
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-};
-
-export default EditPage;
+}
