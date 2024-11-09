@@ -2,6 +2,7 @@
 import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
+//jebo mu githab seme
 
 export default function Home() {
   const [companyName, setCompanyName] = useState<string>("");
