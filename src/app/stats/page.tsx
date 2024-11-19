@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import Select from "react-select";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -37,6 +38,25 @@ const StatsPage: React.FC = () => {
   const [averageExpense, setAverageExpense] = useState<number | undefined>(
     undefined
   );
+
+  const years = [
+    { value: 2023, label: "2023" },
+    { value: 2024, label: "2024" },
+  ];
+  const months = [
+    { value: 0, label: "Januar" },
+    { value: 1, label: "Februar" },
+    { value: 2, label: "Mart" },
+    { value: 3, label: "April" },
+    { value: 4, label: "Maj" },
+    { value: 5, label: "Jun" },
+    { value: 6, label: "Jul" },
+    { value: 7, label: "Avgust" },
+    { value: 8, label: "Septembar" },
+    { value: 9, label: "Oktobar" },
+    { value: 10, label: "Novembar" },
+    { value: 11, label: "Decembar" },
+  ];
 
   useEffect(() => {
     setIsMounted(true);
@@ -119,10 +139,10 @@ const StatsPage: React.FC = () => {
         {
           data,
           backgroundColor: [
-            "rgba(255, 99, 132, 0.8)",
+            "rgba(75, 192, 192, 0.8)",
             "rgba(54, 162, 235, 0.8)",
             "rgba(255, 206, 86, 0.8)",
-            "rgba(75, 192, 192, 0.8)",
+            "rgba(255, 99, 132, 0.8)",
           ],
         },
       ],
@@ -146,10 +166,10 @@ const StatsPage: React.FC = () => {
         {
           data,
           backgroundColor: [
-            "rgba(255, 99, 132, 0.8)",
+            "rgba(75, 192, 192, 0.8)",
             "rgba(54, 162, 235, 0.8)",
             "rgba(255, 206, 86, 0.8)",
-            "rgba(75, 192, 192, 0.8)",
+            "rgba(255, 99, 132, 0.8)",
           ],
         },
       ],
@@ -163,23 +183,41 @@ const StatsPage: React.FC = () => {
           Statistika prodaje i potrošnje
         </h1>
         <div className="mb-6 flex flex-wrap gap-2">
-          {["week", "month", "year"].map((period) => (
-            <button
-              key={period}
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                timeFrame === period
-                  ? "bg-blue-500 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-200"
-              }`}
-              onClick={() => setTimeFrame(period as "week" | "month" | "year")}
-            >
-              {period === "week"
-                ? "Nedelja"
-                : period === "month"
-                ? "Mesec"
-                : "Godina"}
-            </button>
-          ))}
+          <Select
+            options={years}
+            defaultValue={years[1]}
+            isDisabled={true}
+            className="w-48"
+            styles={{
+              control: (base) => ({
+                ...base,
+                borderRadius: "9999px",
+                borderColor: "rgba(34, 139, 34, 0.8)",
+                "&:hover": { borderColor: "rgba(34, 139, 34, 1)" },
+              }),
+              singleValue: (base) => ({
+                ...base,
+                color: "rgba(34, 139, 34, 1)",
+              }),
+            }}
+          />
+          <Select
+            options={months}
+            placeholder="Svi meseci"
+            className="w-48"
+            styles={{
+              control: (base) => ({
+                ...base,
+                borderRadius: "9999px",
+                borderColor: "rgba(34, 139, 34, 0.8)",
+                "&:hover": { borderColor: "rgba(34, 139, 34, 1)" },
+              }),
+              singleValue: (base) => ({
+                ...base,
+                color: "rgba(34, 139, 34, 1)",
+              }),
+            }}
+          />
         </div>
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="bg-white p-4 rounded-lg shadow-md lg:w-1/2">
@@ -265,23 +303,23 @@ const StatsPage: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gray-50 p-4 rounded-lg shadow">
-              <p className="text-gray-700">
+              <p className="text-green-700">
                 <strong>Ukupna zarada:</strong> {totalRevenue} RSD
               </p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg shadow">
-              <p className="text-gray-700">
+              <p className="text-green-700">
                 <strong>Prosečna zarada po proizvodu:</strong>{" "}
                 {averageRevenue.toFixed(2)} RSD
               </p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg shadow">
-              <p className="text-gray-700">
+              <p className="text-green-700">
                 <strong>Ukupna potrošnja:</strong> {totalExpense} RSD
               </p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg shadow">
-              <p className="text-gray-700">
+              <p className="text-green-700">
                 <strong>Prosečna potrošnja po kategoriji:</strong>{" "}
                 {averageExpense !== undefined
                   ? averageExpense.toFixed(2)

@@ -4,6 +4,7 @@ import {
   IoHomeOutline,
   IoStatsChartOutline,
   IoCreateOutline,
+  IoInformationCircleOutline,
   IoChevronForwardOutline,
   IoChevronBackOutline,
 } from "react-icons/io5";
@@ -31,6 +32,7 @@ const Sidebar: React.FC = () => {
     { path: "/", icon: IoHomeOutline, label: "Home" },
     { path: "/stats", icon: IoStatsChartOutline, label: "Statistics" },
     { path: "/edit", icon: IoCreateOutline, label: "Edit" },
+    { path: "/info", icon: IoInformationCircleOutline, label: "Info" },
   ];
 
   return (
@@ -38,7 +40,7 @@ const Sidebar: React.FC = () => {
       <AnimatePresence>
         {!isExpanded && isMobile && (
           <motion.button
-            className="fixed top-1/2 right-0 transform -translate-y-1/2 bg-pink-500 text-white p-2 rounded-l-full shadow-lg z-50"
+            className="fixed top-1/2 right-0 transform -translate-y-1/2 bg-green-500 text-white p-2 rounded-l-full shadow-lg z-50"
             onClick={() => setIsExpanded(true)}
             initial={{ x: 0 }}
             animate={{ x: 0 }}
@@ -74,7 +76,7 @@ const Sidebar: React.FC = () => {
             {menuItems.map(({ path, icon: Icon, label }) => (
               <Link key={path} href={path}>
                 <motion.div
-                  className="flex items-center px-4 py-3 m-2 rounded-xl hover:bg-gray-100 transition-all duration-300 cursor-pointer"
+                  className="flex items-center px-4 py-3 m-2 rounded-xl hover:bg-green-100 transition-all duration-300 cursor-pointer"
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
                 >
