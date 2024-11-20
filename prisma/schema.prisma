@@ -17,13 +17,25 @@ model User {
   id         Int        @id @default(autoincrement())
   email      String     @unique
   password   String
+  userName   String     @default("")
   name       String
   expenses   Expense[]
   sales      Sale[]
   products   Product[]
-  categories Category[] // Dodato polje za relaciju sa kategorijama
+  categories Category[]
+  expenseCategory ExpenseCategory[] 
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+}
+
+model ExpenseCategory {
+  id        Int       @id @default(autoincrement())
+  name      String
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  expenses  Expense[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Expense {
@@ -32,6 +44,8 @@ model Expense {
   user        User     @relation(fields: [userId], references: [id])
   amount      Float
   description String?
+  expenseCategoryId Int
+  expenseCategory ExpenseCategory @relation(fields: [expenseCategoryId], references: [id]) 
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

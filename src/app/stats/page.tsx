@@ -23,15 +23,16 @@ interface Sale {
 }
 
 interface Expense {
-  category: string;
-  amount: number;
+  categoryName: string;
+  totalExpense: number;
 }
 
 const StatsPage: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
-  const [timeFrame, setTimeFrame] = useState<"week" | "month" | "year">("week");
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [salesData, setSalesData] = useState<Sale[]>([]);
-  const [expenseData, setExpenseData] = useState<Expense[]>([]);
+  const [expenseSummary, setexpenseSummary] = useState<Expense[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [averageRevenue, setAverageRevenue] = useState(0);
   const [totalExpense, setTotalExpense] = useState(0);
@@ -64,13 +65,17 @@ const StatsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (selectedMonth === null || selectedYear === null) return;
       try {
+        console.log("salje");
+
         const response = await fetch(
-          `/api/stats?userId=1&timeFrame=${timeFrame}`
+          `/api/stats?userId=1&month=${selectedMonth + 1}&year=${selectedYear}`
         );
+
         const data = await response.json();
         setSalesData(data.sales);
-        setExpenseData(data.expenses);
+        setexpenseSummary(data.expenseSummary);
         setTotalRevenue(data.totalRevenue);
         setAverageRevenue(data.averageRevenue);
         setTotalExpense(data.totalExpense);
@@ -81,7 +86,7 @@ const StatsPage: React.FC = () => {
     };
 
     fetchData();
-  }, [timeFrame]);
+  }, [selectedMonth, selectedYear]);
 
   // Group sales data by product name and sum their amounts
   const groupedSalesData = React.useMemo(() => {
@@ -102,25 +107,25 @@ const StatsPage: React.FC = () => {
   }, [salesData]);
 
   // Group expense data by category and sum their amounts
-  const groupedExpenseData = React.useMemo(() => {
-    const expenseCounts: Record<
-      string,
-      { category: string; totalAmount: number }
-    > = {};
+  // const groupedExpenseData = React.useMemo(() => {
+  //   const expenseCounts: Record<
+  //     string,
+  //     { category: string; totalAmount: number }
+  //   > = {};
 
-    expenseData.forEach((expense) => {
-      const categoryName = expense.category;
-      if (!expenseCounts[categoryName]) {
-        expenseCounts[categoryName] = {
-          category: categoryName,
-          totalAmount: 0,
-        };
-      }
-      expenseCounts[categoryName].totalAmount += expense.amount;
-    });
+  //   expenseSummary.forEach((expense) => {
+  //     const categoryName = expense.categoryName;
+  //     if (!expenseCounts[categoryName]) {
+  //       expenseCounts[categoryName] = {
+  //         category: categoryName,
+  //         totalAmount: 0,
+  //       };
+  //     }
+  //     expenseCounts[categoryName].totalAmount += expense.totalExpense;
+  //   });
 
-    return Object.values(expenseCounts);
-  }, [expenseData]);
+  //   return Object.values(expenseCounts);
+  // }, [expenseSummary]);
 
   // Process the grouped sales data for the Doughnut chart
   const doughnutSalesData = React.useMemo(() => {
@@ -152,13 +157,13 @@ const StatsPage: React.FC = () => {
   // Process the grouped expense data for the Doughnut chart
   const doughnutExpenseData = React.useMemo(() => {
     // Sort the categories by expense amount and take the top 4
-    const sortedCategories = groupedExpenseData
-      .sort((a, b) => b.totalAmount - a.totalAmount)
+    const sortedCategories = expenseSummary
+      .sort((a, b) => b.totalExpense - a.totalExpense)
       .slice(0, 4);
 
     // Extract labels and data for the Doughnut chart
-    const labels = sortedCategories.map(({ category }) => category);
-    const data = sortedCategories.map(({ totalAmount }) => totalAmount);
+    const labels = sortedCategories.map(({ categoryName }) => categoryName);
+    const data = sortedCategories.map(({ totalExpense }) => totalExpense);
 
     return {
       labels,
@@ -174,7 +179,7 @@ const StatsPage: React.FC = () => {
         },
       ],
     };
-  }, [groupedExpenseData]);
+  }, [expenseSummary]);
 
   return (
     <div className="bg-gray-100 min-h-screen p-4">
@@ -185,8 +190,12 @@ const StatsPage: React.FC = () => {
         <div className="mb-6 flex flex-wrap gap-2">
           <Select
             options={years}
-            defaultValue={years[1]}
-            isDisabled={true}
+            value={
+              selectedYear
+                ? { value: selectedYear, label: selectedYear.toString() }
+                : null
+            }
+            onChange={(e) => setSelectedYear(e ? e.value : null)}
             className="w-48"
             styles={{
               control: (base) => ({
@@ -204,6 +213,7 @@ const StatsPage: React.FC = () => {
           <Select
             options={months}
             placeholder="Svi meseci"
+            onChange={(e) => setSelectedMonth(e ? e.value : null)}
             className="w-48"
             styles={{
               control: (base) => ({
@@ -284,11 +294,11 @@ const StatsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {groupedExpenseData.map((item, index) => (
+                  {expenseSummary.map((item, index) => (
                     <tr key={index} className="border-b">
-                      <td className="py-2 px-4">{item.category}</td>
+                      <td className="py-2 px-4">{item.categoryName}</td>
                       <td className="text-right py-2 px-4">
-                        {item.totalAmount} RSD
+                        {item.totalExpense} RSD
                       </td>
                     </tr>
                   ))}

@@ -10,6 +10,7 @@ export default function Home() {
     { id: number; kolicina: number; prodId: number }[]
   >([]);
   const [menuSections, setMenuSections] = useState<MenuSection[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<MenuSection[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
@@ -27,19 +28,28 @@ export default function Home() {
     products: MenuItem[];
   }
 
-  const expenseCategories = [
-    { id: 1, name: "Marketing" },
-    { id: 2, name: "Operativni troškovi" },
-    { id: 3, name: "Zaposleni" },
-    { id: 4, name: "Održavanje" },
-  ];
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch("/api/categories");
         const data = await response.json();
         setMenuSections(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/getExpenseCategories");
+        const data = await response.json();
+        setExpenseCategories(data);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -58,11 +68,12 @@ export default function Home() {
     setShowTrosakPopup(true);
   };
 
-  const handleTrosakPotvrda = async (categoryId: number) => {
+  const handleTrosakPotvrda = async (expenseCategoryId: number) => {
     try {
       const expenseData = {
         amount: Number(trosak),
-        categoryId,
+        expenseCategoryId,
+        userId: 1,
       };
 
       const response = await fetch("/api/expenses", {

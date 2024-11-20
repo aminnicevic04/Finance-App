@@ -6,13 +6,7 @@ import { Toaster, toast } from "react-hot-toast";
 export default function EditPage() {
   const [companyName, setCompanyName] = useState<string>("");
   const [ownerName, setOwnerName] = useState<string>("");
-  const [trosak, setTrosak] = useState("");
-  const [opisTroska, setOpisTroska] = useState("");
-  const [showTrosakPopup, setShowTrosakPopup] = useState(false);
-  const [showProdajaPopup, setShowProdajaPopup] = useState(false);
-  const [prodatiArtikli, setProdatiArtikli] = useState<
-    { id: number; kolicina: number; prodId: number }[]
-  >([]);
+
   const [menuSections, setMenuSections] = useState<MenuSection[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -51,107 +45,6 @@ export default function EditPage() {
     fetchData();
   }, []);
 
-  const handleTrosakSubmit = () => {
-    if (Number(trosak) <= 0) {
-      toast.error("Unesite validan iznos troška!");
-      return;
-    }
-    setShowTrosakPopup(true);
-  };
-
-  const handleTrosakPotvrda = async () => {
-    if (!opisTroska) {
-      toast.error("Unesite opis troška!");
-      return;
-    }
-
-    try {
-      const expenseData = {
-        amount: Number(trosak),
-        description: opisTroska,
-      };
-
-      const response = await fetch("/api/expenses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(expenseData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Došlo je do greške prilikom čuvanja troška!");
-      }
-
-      const result = await response.json();
-      toast.success("Trošak je uspešno sačuvan!");
-      console.log("Saved expense data:", result);
-
-      setTrosak("");
-      setOpisTroska("");
-      setShowTrosakPopup(false);
-    } catch (error) {
-      toast.error("Došlo je do greške prilikom čuvanja troška!");
-      console.error("Error saving expense:", error);
-    }
-  };
-
-  const handleProdajaSubmit = () => {
-    setShowProdajaPopup(true);
-  };
-
-  const handleProdajaPotvrda = async () => {
-    if (prodatiArtikli.length === 0) {
-      toast.error("Izaberite bar jedan artikal!");
-      return;
-    }
-
-    const validSales = prodatiArtikli.filter((artikal) => artikal.kolicina > 0);
-
-    if (validSales.length === 0) {
-      toast.error("Nema artikala za prodaju!");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/sales", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(validSales),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save sales data");
-      }
-
-      const result = await response.json();
-      toast.success("Prodaja je uspešno sačuvana!");
-      console.log("Saved sales data:", result);
-      setProdatiArtikli([]);
-      setShowProdajaPopup(false);
-    } catch (error) {
-      toast.error("Došlo je do greške prilikom čuvanja prodaje!");
-      console.error("Error saving sales:", error);
-    }
-  };
-
-  const handleArtikalChange = (id: number, value: string, prodId: number) => {
-    const kolicina = value === "" ? 0 : parseInt(value);
-    setProdatiArtikli((prev) => {
-      const existingIndex = prev.findIndex((a) => a.id === id);
-
-      if (existingIndex !== -1) {
-        const updated = [...prev];
-        updated[existingIndex].kolicina = kolicina;
-        return updated;
-      } else {
-        return [...prev, { id, kolicina, prodId }];
-      }
-    });
-  };
-
   const handleKeyPress = (
     e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
     action: () => void
@@ -162,19 +55,80 @@ export default function EditPage() {
     }
   };
 
+  const changeName = async () => {
+    if (!companyName) {
+      toast.error("Unesite ime");
+    }
+
+    try {
+      const response = await fetch("/api/changeName", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: companyName,
+          id: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save sales data");
+      }
+      toast.success("Ime je uspesno promenjeno");
+    } catch (error) {
+      toast.error("Došlo je do greške promene imena");
+      console.error("Error changing name:", error);
+    }
+
+    return;
+  };
+
+  const changeUsername = async () => {
+    if (!ownerName) {
+      toast.error("Unesite ime");
+    }
+    console.log(ownerName);
+
+    try {
+      const response = await fetch("/api/changeUsername", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userName: ownerName,
+          id: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Neuspesno cuvanje imena");
+      }
+      toast.success("Ime je uspesno promenjeno");
+    } catch (error) {
+      toast.error("Došlo je do greške promene imena");
+      console.error("Error changing name:", error);
+    }
+
+    return;
+  };
+
   const handleCreateCategory = async () => {
     if (!newCategoryName) {
       toast.error("Unesite naziv kategorije!");
       return;
     }
 
+    console.log(newCategoryName);
+
     try {
-      const response = await fetch("/api/categories", {
+      const response = await fetch("/api/addCategory", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: newCategoryName }),
+        body: JSON.stringify({ categoryName: newCategoryName, userId: 1 }),
       });
 
       if (!response.ok) {
@@ -198,12 +152,15 @@ export default function EditPage() {
     }
 
     try {
-      const response = await fetch("/api/expense-categories", {
+      const response = await fetch("/api/addExpenseCategory", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: newExpenseCategoryName }),
+        body: JSON.stringify({
+          categoryName: newExpenseCategoryName,
+          userId: 1,
+        }),
       });
 
       if (!response.ok) {
@@ -233,15 +190,16 @@ export default function EditPage() {
     }
 
     try {
-      const response = await fetch("/api/products", {
+      const response = await fetch("/api/addProduct", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: newProductName,
+          productName: newProductName,
           price: Number(newProductPrice),
           categoryId: selectedCategoryId,
+          userId: 1,
         }),
       });
 
@@ -301,6 +259,7 @@ export default function EditPage() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setCompanyName(e.target.value)
                 }
+                onKeyPress={(e) => handleKeyPress(e, changeName)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                 placeholder="Ime biznisa"
               />
@@ -316,6 +275,7 @@ export default function EditPage() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setOwnerName(e.target.value)
                 }
+                onKeyPress={(e) => handleKeyPress(e, changeUsername)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                 placeholder="Ime vlasnika"
               />
@@ -374,7 +334,7 @@ export default function EditPage() {
                 <div className="w-1/2">
                   <input
                     type="text"
-                    id="newProduct"
+                    id="newProductName"
                     value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
                     className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
