@@ -4,12 +4,16 @@ import { Toaster, toast } from "react-hot-toast";
 
 export default function Home() {
   const [trosak, setTrosak] = useState("");
-  const [opisTroska, setOpisTroska] = useState("");
   const [showTrosakPopup, setShowTrosakPopup] = useState(false);
   const [showProdajaPopup, setShowProdajaPopup] = useState(false);
   const [prodatiArtikli, setProdatiArtikli] = useState<
     { id: number; kolicina: number; prodId: number }[]
   >([]);
+  const [menuSections, setMenuSections] = useState<MenuSection[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
 
   interface MenuItem {
     id: number;
@@ -22,8 +26,13 @@ export default function Home() {
     name: string;
     products: MenuItem[];
   }
-  const [menuSections, setMenuSections] = useState<MenuSection[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const expenseCategories = [
+    { id: 1, name: "Marketing" },
+    { id: 2, name: "Operativni troškovi" },
+    { id: 3, name: "Zaposleni" },
+    { id: 4, name: "Održavanje" },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,20 +58,13 @@ export default function Home() {
     setShowTrosakPopup(true);
   };
 
-  const handleTrosakPotvrda = async () => {
-    if (!opisTroska) {
-      toast.error("Unesite opis troška!");
-      return;
-    }
-
+  const handleTrosakPotvrda = async (categoryId: number) => {
     try {
-      // Pripremite podatke za slanje
       const expenseData = {
         amount: Number(trosak),
-        description: opisTroska,
+        categoryId,
       };
 
-      // Pošaljite POST zahtev na backend
       const response = await fetch("/api/expenses", {
         method: "POST",
         headers: {
@@ -76,14 +78,10 @@ export default function Home() {
       }
 
       const result = await response.json();
-
-      // Prikazujemo uspešnu poruku
       toast.success("Trošak je uspešno sačuvan!");
       console.log("Saved expense data:", result);
 
-      // Resetovanje polja nakon uspešnog unosa
       setTrosak("");
-      setOpisTroska("");
       setShowTrosakPopup(false);
     } catch (error) {
       toast.error("Došlo je do greške prilikom čuvanja troška!");
@@ -138,12 +136,10 @@ export default function Home() {
       const existingIndex = prev.findIndex((a) => a.id === id);
 
       if (existingIndex !== -1) {
-        // Ako artikal već postoji, ažuriraj količinu
         const updated = [...prev];
         updated[existingIndex].kolicina = kolicina;
         return updated;
       } else {
-        // Ako artikal ne postoji, dodaj novi
         return [...prev, { id, kolicina, prodId }];
       }
     });
@@ -160,7 +156,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-white to-green-100 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
       <Toaster position="top-right" />
       <motion.div
         initial={{ opacity: 0, y: -50 }}
@@ -168,7 +164,7 @@ export default function Home() {
         transition={{ duration: 0.5 }}
         className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8"
       >
-        <h1 className="text-4xl font-bold text-blue-700 mb-6 text-center">
+        <h1 className="text-4xl font-bold text-green-6  00 mb-6 text-center">
           Dobrodošli!
         </h1>
         <p className="text-gray-600 mb-8 text-center">
@@ -191,25 +187,25 @@ export default function Home() {
               onKeyPress={(e) => handleKeyPress(e, handleTrosakSubmit)}
               min="0"
               step="0.01"
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Unesite iznos i pritisnite Enter"
+              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Unesite iznos"
             />
           </div>
 
           <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleTrosakSubmit}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition duration-300 font-semibold"
+            className="w-full bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 transition duration-300 font-semibold"
           >
             Dodaj Trošak
           </motion.button>
 
           <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleProdajaSubmit}
-            className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition duration-300 font-semibold"
+            className="w-full bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 transition duration-300 font-semibold"
           >
             Dodaj Prodaju
           </motion.button>
@@ -224,28 +220,27 @@ export default function Home() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
           >
-            <div className="bg-white p-8 rounded-lg w-96">
-              <h2 className="text-2xl font-bold mb-4">Opis Troška</h2>
-              <textarea
-                value={opisTroska}
-                onChange={(e) => setOpisTroska(e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, handleTrosakPotvrda)}
-                className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none"
-                rows={4}
-                placeholder="Unesite opis troška i pritisnite Enter"
-              ></textarea>
+            <div className="bg-white p-8 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-4">
+                Izaberite Kategoriju Troška
+              </h2>
+              {expenseCategories.map((category) => (
+                <div
+                  key={category.id}
+                  className="mb-4 cursor-pointer"
+                  onClick={() => handleTrosakPotvrda(category.id)}
+                >
+                  <div className="p-4 bg-gray-100 rounded-lg shadow-md hover:bg-gray-200 transition duration-300">
+                    {category.name}
+                  </div>
+                </div>
+              ))}
               <div className="mt-4 flex justify-end space-x-2">
                 <button
                   onClick={() => setShowTrosakPopup(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
                 >
                   Otkaži
-                </button>
-                <button
-                  onClick={handleTrosakPotvrda}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Potvrdi
                 </button>
               </div>
             </div>
