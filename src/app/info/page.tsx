@@ -2,28 +2,101 @@ import React from "react";
 
 const InfoPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold text-green-700 mb-6 text-center">
-          Podrška
-        </h1>
-        <p className="text-gray-700 mb-4">
-          Dobrodošli na stranicu za podršku. Ako imate bilo kakvih pitanja ili
-          problema, slobodno nas kontaktirajte putem sledećih kanala:
-        </p>
-        <ul className="list-disc list-inside text-gray-700 mb-4">
-          <li>Email: support@monetize.com</li>
-          <li>Telefon: +381 11 123 4567</li>
-          <li>Adresa: Ulica Hasketa Paučine 123, Novi Pazar, Srbija</li>
-        </ul>
-        <p className="text-gray-700 mb-4">
-          Naš tim za podršku je dostupan od ponedeljka do petka, od 9:00 do
-          17:00 časova.
-        </p>
-        <p className="text-gray-700">
-          Hvala što koristite naše usluge. Trudimo se da vam pružimo najbolju
-          moguću podršku.
-        </p>
+    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
+      <div className="max-w-6xl w-full bg-white rounded-3xl shadow-2xl p-8">
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-green-700 mb-6 text-center">
+            Kako koristiti aplikaciju
+          </h2>
+          <p className="text-gray-700 mb-6 text-lg leading-relaxed">
+            Naša aplikacija za praćenje finansija omogućava vam da pratite
+            zaradu i potrošnju vašeg preduzeća. Možete unositi prihode i
+            troškove, a aplikacija će automatski izračunati ukupnu zaradu i
+            potrošnju.
+          </p>
+          <p className="text-gray-700 mb-6 text-lg leading-relaxed">
+            Na glavnoj stranici možete videti pregled svih transakcija, dok na
+            stranici sa statistikama možete videti detaljne grafikone i analize
+            vaših finansija. Naša aplikacija je dizajnirana da bude jednostavna
+            za korišćenje, ali i dovoljno moćna da zadovolji sve vaše potrebe za
+            praćenjem finansija.
+          </p>
+          <p className="text-gray-700 mb-6 text-lg leading-relaxed">
+            Aplikaciju je razvila ekipa iz Monetize NP, koja se bavi razvojem
+            softverskih rešenja. Naš cilj je da vam omogućimo jednostavan i
+            efikasan način za praćenje vaših prihoda i troškova, kako biste
+            mogli da se fokusirate na rast vašeg preduzeća.
+          </p>
+        </div>
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-green-700 mb-6 text-center">
+            Kontaktirajte nas
+          </h2>
+          <form className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Ime
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Vaše ime"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Prezime
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Vaše prezime"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Vaš email"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Broj telefona
+                </label>
+                <input
+                  type="tel"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Vaš broj telefona"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Poruka
+              </label>
+              <textarea
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                rows={4}
+                placeholder="Vaša poruka"
+              ></textarea>
+            </div>
+            <div className="text-center">
+              <button
+                type="submit"
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition duration-300 font-semibold"
+              >
+                Pošalji
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

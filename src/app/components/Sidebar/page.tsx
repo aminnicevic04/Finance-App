@@ -7,6 +7,7 @@ import {
   IoInformationCircleOutline,
   IoChevronForwardOutline,
   IoChevronBackOutline,
+  IoNotificationsOutline, // Dodata ikona za notifikacije
 } from "react-icons/io5";
 import Link from "next/link";
 
@@ -33,6 +34,11 @@ const Sidebar: React.FC = () => {
     { path: "/stats", icon: IoStatsChartOutline, label: "Statistics" },
     { path: "/edit", icon: IoCreateOutline, label: "Edit" },
     { path: "/info", icon: IoInformationCircleOutline, label: "Info" },
+    {
+      path: "/notifications",
+      icon: IoNotificationsOutline,
+      label: "Notifications",
+    }, // Dodata stavka za notifikacije
   ];
 
   return (

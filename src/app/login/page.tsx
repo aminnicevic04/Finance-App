@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import Link from "next/link";
 
 const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +23,7 @@ const LoginPage: React.FC = () => {
               type="email"
               id="email"
               name="email"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
           </div>
@@ -35,7 +36,7 @@ const LoginPage: React.FC = () => {
                 type={showPassword ? "text" : "password"}
                 id="password"
                 name="password"
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
               <button
@@ -49,11 +50,17 @@ const LoginPage: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200"
+            className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-200"
           >
             Login
           </button>
         </form>
+        <p className="mt-4 text-center text-gray-600">
+          Nemate nalog?{" "}
+          <Link href="/register" legacyBehavior>
+            <a className="text-green-500 hover:underline">Registrujte se</a>
+          </Link>
+        </p>
       </div>
     </div>
   );
