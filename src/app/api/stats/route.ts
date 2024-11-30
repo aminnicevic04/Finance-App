@@ -25,8 +25,8 @@ export async function GET(req: Request) {
       );
     }
 
-    const startOfMonth = new Date(year, month - 1, 1); // month is 0-indexed
-    const endOfMonth = new Date(year, month, 0); // Get the last day of the month
+    const startOfMonth = new Date(Date.UTC(year, month - 1, 1)); // Početak meseca u UTC
+    const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59)); // Kraj meseca u UTC
     console.log(startOfMonth, endOfMonth);
 
     // Fetching sales data for the user in the given month

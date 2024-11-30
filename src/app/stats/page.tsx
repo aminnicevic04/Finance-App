@@ -220,7 +220,11 @@ const StatsPage: React.FC = () => {
           />
           <Select
             options={months}
-            placeholder="Svi meseci"
+            value={
+              selectedMonth !== null
+                ? { value: selectedMonth, label: months[selectedMonth].label }
+                : null
+            }
             onChange={(e) => setSelectedMonth(e ? e.value : null)}
             className="w-48"
             styles={{
