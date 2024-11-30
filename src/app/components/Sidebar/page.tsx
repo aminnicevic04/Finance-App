@@ -10,6 +10,7 @@ import {
   IoNotificationsOutline, // Dodata ikona za notifikacije
 } from "react-icons/io5";
 import Link from "next/link";
+import { LogoutButton } from "@/app/util/LogoutButon";
 
 const Sidebar: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -79,6 +80,7 @@ const Sidebar: React.FC = () => {
             )}
           </motion.button>
           <nav className="flex-1 mt-8">
+            <LogoutButton />
             {menuItems.map(({ path, icon: Icon, label }) => (
               <Link key={path} href={path}>
                 <motion.div

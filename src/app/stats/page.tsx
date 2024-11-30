@@ -61,17 +61,24 @@ const StatsPage: React.FC = () => {
 
   useEffect(() => {
     setIsMounted(true);
+    const currentDate = new Date();
+    setSelectedMonth(currentDate.getMonth()); // 0-indexed month
+    setSelectedYear(currentDate.getFullYear()); // current year
   }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       if (selectedMonth === null || selectedYear === null) return;
       try {
-        console.log("salje");
+        console.log("Sending request for", selectedMonth + 1, selectedYear);
 
         const response = await fetch(
-          `/api/stats?userId=1&month=${selectedMonth + 1}&year=${selectedYear}`
+          `/api/stats?month=${selectedMonth + 1}&year=${selectedYear}`
         );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch data");
+        }
 
         const data = await response.json();
         setSalesData(data.sales);
@@ -87,6 +94,7 @@ const StatsPage: React.FC = () => {
 
     fetchData();
   }, [selectedMonth, selectedYear]);
+  console.log(salesData);
 
   // Group sales data by product name and sum their amounts
   const groupedSalesData = React.useMemo(() => {

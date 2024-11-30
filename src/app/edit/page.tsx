@@ -2,6 +2,7 @@
 import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 export default function EditPage() {
   const [companyName, setCompanyName] = useState<string>("");
@@ -16,6 +17,8 @@ export default function EditPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
+  const { data: session } = useSession();
+  console.log(JSON.stringify(session));
 
   interface MenuItem {
     id: number;
@@ -211,7 +214,14 @@ export default function EditPage() {
       setMenuSections((prev) =>
         prev.map((section) =>
           section.id === selectedCategoryId
-            ? { ...section, products: [...section.products, newProduct] }
+            ? {
+                ...section,
+                // Ako section.products već postoji, dodajemo novi proizvod u niz
+                // Ako ne postoji, inicijalizujemo novi niz sa novim proizvodom
+                products: section.products
+                  ? [...section.products, newProduct]
+                  : [newProduct],
+              }
             : section
         )
       );
@@ -224,6 +234,7 @@ export default function EditPage() {
       console.error("Error creating product:", error);
     }
   };
+  console.log(companyName);
 
   if (isLoading)
     return (
@@ -237,10 +248,10 @@ export default function EditPage() {
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-8">
         <div className="bg-green-600 p-4 sm:p-6 text-white text-center">
           <h1 className="text-2xl sm:text-3xl font-extrabold">
-            Zdravo "Vlasnik" Dobrodošli u
+            Zdravo Dobrodošli u
           </h1>
           <h2 className="text-xl sm:text-2xl font-bold mt-1">
-            {companyName} finansije
+            {session?.user?.name} finansije
           </h2>
         </div>
         <div className="p-4 sm:p-6 ">
@@ -266,19 +277,19 @@ export default function EditPage() {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* <label className="block text-sm font-medium text-gray-700 mb-1">
                 Ime vlasnika biznisa
               </label>
               <input
                 type="text"
                 value={ownerName}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setOwnerName(e.target.value)
+                  setCompanyName(e.target.value)
                 }
-                onKeyPress={(e) => handleKeyPress(e, changeUsername)}
+                onKeyPress={(e) => handleKeyPress(e, changeName)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                 placeholder="Ime vlasnika"
-              />
+              /> */}
             </div>
           </div>
 

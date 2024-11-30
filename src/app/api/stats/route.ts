@@ -1,12 +1,20 @@
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "User ne postoji" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
-    const userId = Number(searchParams.get("userId"));
+    const userId = parseInt(session?.user?.id);
     const month = Number(searchParams.get("month"));
     const year = Number(searchParams.get("year"));
 
@@ -19,6 +27,7 @@ export async function GET(req: Request) {
 
     const startOfMonth = new Date(year, month - 1, 1); // month is 0-indexed
     const endOfMonth = new Date(year, month, 0); // Get the last day of the month
+    console.log(startOfMonth, endOfMonth);
 
     // Fetching sales data for the user in the given month
     const sales = await prisma.sale.findMany({
@@ -64,6 +73,7 @@ export async function GET(req: Request) {
         (acc, expense) => acc + expense.amount,
         0
       );
+
       totalExpense += categoryTotalExpense;
 
       return {
@@ -88,6 +98,7 @@ export async function GET(req: Request) {
       averageExpense,
     });
   } catch (error) {
+    console.error("Error fetching stats:", error);
     return NextResponse.json(
       { error: "Error fetching stats" },
       { status: 500 }

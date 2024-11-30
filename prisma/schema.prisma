@@ -17,10 +17,12 @@ model User {
   id         Int        @id @default(autoincrement())
   email      String     @unique
   password   String
-  userName   String     @default("")
   name       String
+  rekordProdaja Int     @default(0)
+  totalTrosak Int       @default(0)
   expenses   Expense[]
   sales      Sale[]
+  notifications Notification[]
   products   Product[]
   categories Category[]
   expenseCategory ExpenseCategory[] 
@@ -85,4 +87,15 @@ model Category {
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  message     String
+  type        String   // "good" or "bad"
+  isNew       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

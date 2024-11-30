@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface Notification {
   id: number;
@@ -9,34 +9,26 @@ interface Notification {
 }
 
 const NotificationPage: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      message: "Ostvarili ste novi rekord dnevne prodaje!",
-      type: "good",
-      isNew: true,
-    },
-    {
-      id: 2,
-      message: "Prešli ste limit troškova za ovaj mesec.",
-      type: "bad",
-      isNew: true,
-    },
-    {
-      id: 3,
-      message: "Ostvarili ste novu rekordnu mesečnu zaradu!",
-      type: "good",
-      isNew: false,
-    },
-    {
-      id: 4,
-      message: "Troškovi su prešli zadati limit.",
-      type: "bad",
-      isNew: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const handleMarkAsRead = (id: number) => {
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const response = await fetch("/api/notifications");
+      const data = await response.json();
+      setNotifications(data);
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const handleMarkAsRead = async (id: number) => {
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      body: JSON.stringify({ notificationId: id }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     setNotifications((prevNotifications) =>
       prevNotifications.map((notification) =>
         notification.id === id

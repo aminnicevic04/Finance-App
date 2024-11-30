@@ -1,22 +1,64 @@
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({
+      error: "User ne postoji",
+    });
+  }
+
+  const userId = parseInt(session?.user?.id);
   const salesData = await request.json();
 
-  // Assuming you have a user ID to associate the sales with
-  const userId = 1; // Replace with the actual user ID
-
   try {
+    // Get the user's current rekordProdaja (record sales)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { rekordProdaja: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({
+        error: "User not found",
+      });
+    }
+
+    let newRecord = false;
+
+    // Calculate the total sales from the incoming data
+    const totalSalesAmount = salesData.reduce(
+      (acc: number, sale: { kolicina: number }) => {
+        return acc + sale.kolicina; // Assuming `kolicina` is the sale amount
+      },
+      0
+    );
+
+    // Check if the total sales exceed the current rekordProdaja
+    if (totalSalesAmount > user.rekordProdaja) {
+      // Update the user's rekordProdaja
+      await prisma.user.update({
+        where: { id: userId },
+        data: { rekordProdaja: totalSalesAmount },
+      });
+
+      // Set the flag to true, so we can notify the user
+      newRecord = true;
+    }
+
+    // Create the sales entries
     const sales = await Promise.all(
       salesData.map(
         async (sale: { id: number; kolicina: number; prodId: number }) => {
           const { id, kolicina, prodId } = sale;
 
-          // You can define the amount based on your logic; this is just an example
-          const amount = kolicina; // Adjust this based on the product's price
+          // Assuming `amount` is based on the sale quantity
+          const amount = kolicina;
           const productId = prodId;
 
           return await prisma.sale.create({
@@ -30,6 +72,17 @@ export async function POST(request: Request) {
         }
       )
     );
+
+    // If a new record was set, create a notification
+    if (newRecord) {
+      await prisma.notification.create({
+        data: {
+          userId,
+          message: "Ostvarili ste novi rekord dnevne prodaje!",
+          type: "good",
+        },
+      });
+    }
 
     return NextResponse.json(sales, { status: 201 });
   } catch (error) {

@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 export async function DELETE(req: Request) {
-  const { id } = await req.json();
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({
+      error: "User ne postoji",
+    });
+  }
+
+  const id = parseInt(session?.user?.id);
 
   try {
     await prisma.product.delete({
