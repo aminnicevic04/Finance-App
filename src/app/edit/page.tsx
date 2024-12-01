@@ -3,6 +3,7 @@ import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 export default function EditPage() {
   const [companyName, setCompanyName] = useState<string>("");
@@ -17,7 +18,12 @@ export default function EditPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
-  const { data: session } = useSession();
+  const { data: session } = useSession({
+    required: true,
+    onUnauthenticated() {
+      redirect("/login?callbackUrl=/edit");
+    },
+  });
   console.log(JSON.stringify(session));
 
   interface MenuItem {

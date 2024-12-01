@@ -1,4 +1,6 @@
 "use client";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 import React, { useState, useEffect } from "react";
 
 interface Notification {
@@ -9,6 +11,12 @@ interface Notification {
 }
 
 const NotificationPage: React.FC = () => {
+  const { data: session } = useSession({
+    required: true,
+    onUnauthenticated() {
+      redirect("/login?callbackUrl=/notifications");
+    },
+  });
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {

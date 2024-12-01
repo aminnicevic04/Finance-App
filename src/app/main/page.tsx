@@ -1,8 +1,16 @@
 import React, { useState, KeyboardEvent, ChangeEvent, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 export default function Home() {
+  const { data: session } = useSession({
+    required: true,
+    onUnauthenticated() {
+      redirect("/login?callbackUrl=/");
+    },
+  });
   const [trosak, setTrosak] = useState("");
   const [showTrosakPopup, setShowTrosakPopup] = useState(false);
   const [showProdajaPopup, setShowProdajaPopup] = useState(false);

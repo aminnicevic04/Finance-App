@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import Select from "react-select";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -28,6 +30,12 @@ interface Expense {
 }
 
 const StatsPage: React.FC = () => {
+  const { data: session } = useSession({
+    required: true,
+    onUnauthenticated() {
+      redirect("/login?callbackUrl=/stats");
+    },
+  });
   const [isMounted, setIsMounted] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
