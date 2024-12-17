@@ -2,15 +2,35 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from "chart.js";
 import Select from "react-select";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale
+);
 
 const DynamicDoughnut = dynamic(
   () => import("react-chartjs-2").then((mod) => mod.Doughnut),
+  { ssr: false }
+);
+
+const DynamicBar = dynamic(
+  () => import("react-chartjs-2").then((mod) => mod.Bar),
   { ssr: false }
 );
 
@@ -122,27 +142,6 @@ const StatsPage: React.FC = () => {
     return Object.values(saleCounts);
   }, [salesData]);
 
-  // Group expense data by category and sum their amounts
-  // const groupedExpenseData = React.useMemo(() => {
-  //   const expenseCounts: Record<
-  //     string,
-  //     { category: string; totalAmount: number }
-  //   > = {};
-
-  //   expenseSummary.forEach((expense) => {
-  //     const categoryName = expense.categoryName;
-  //     if (!expenseCounts[categoryName]) {
-  //       expenseCounts[categoryName] = {
-  //         category: categoryName,
-  //         totalAmount: 0,
-  //       };
-  //     }
-  //     expenseCounts[categoryName].totalAmount += expense.totalExpense;
-  //   });
-
-  //   return Object.values(expenseCounts);
-  // }, [expenseSummary]);
-
   // Process the grouped sales data for the Doughnut chart
   const doughnutSalesData = React.useMemo(() => {
     // Sort the products by sales count and take the top 4
@@ -196,6 +195,50 @@ const StatsPage: React.FC = () => {
       ],
     };
   }, [expenseSummary]);
+
+  // Mock data for marketing charts
+  const genderData = {
+    labels: ["Muški", "Ženski"],
+    datasets: [
+      {
+        data: [60, 40], // Mock data
+        backgroundColor: ["rgba(75, 192, 192, 0.8)", "rgba(255, 99, 132, 0.8)"],
+      },
+    ],
+  };
+
+  const ageGroupData = {
+    labels: ["0-18", "19-25", "26-35", "36-45", "46-60", "60+"],
+    datasets: [
+      {
+        data: [10, 20, 30, 25, 10, 5], // Mock data
+        backgroundColor: [
+          "rgba(75, 192, 192, 0.8)",
+          "rgba(54, 162, 235, 0.8)",
+          "rgba(255, 206, 86, 0.8)",
+          "rgba(255, 99, 132, 0.8)",
+          "rgba(153, 102, 255, 0.8)",
+          "rgba(255, 159, 64, 0.8)",
+        ],
+      },
+    ],
+  };
+
+  const cityData = {
+    labels: ["Beograd", "Novi Sad", "Niš", "Kragujevac", "Subotica"],
+    datasets: [
+      {
+        data: [30, 25, 20, 15, 10], // Mock data
+        backgroundColor: [
+          "rgba(75, 192, 192, 0.8)",
+          "rgba(54, 162, 235, 0.8)",
+          "rgba(255, 206, 86, 0.8)",
+          "rgba(255, 99, 132, 0.8)",
+          "rgba(153, 102, 255, 0.8)",
+        ],
+      },
+    ],
+  };
 
   return (
     <div className="bg-gray-100 min-h-screen p-4">
@@ -356,6 +399,41 @@ const StatsPage: React.FC = () => {
                   : "N/A"}{" "}
                 RSD
               </p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-6 bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4 text-gray-700">
+            Marketing Statistika
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-gray-50 p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4 text-gray-700">Pol</h3>
+              {isMounted && (
+                <div className="w-full max-w-xs mx-auto">
+                  <DynamicDoughnut data={genderData} />
+                </div>
+              )}
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4 text-gray-700">
+                Starosne Grupe
+              </h3>
+              {isMounted && (
+                <div className="w-full max-w-xs mx-auto">
+                  <DynamicBar data={ageGroupData} />
+                </div>
+              )}
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4 text-gray-700">
+                Gradovi
+              </h3>
+              {isMounted && (
+                <div className="w-full max-w-xs mx-auto">
+                  <DynamicBar data={cityData} />
+                </div>
+              )}
             </div>
           </div>
         </div>

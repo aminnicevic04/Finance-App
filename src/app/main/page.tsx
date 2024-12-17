@@ -14,6 +14,7 @@ export default function Home() {
   const [trosak, setTrosak] = useState("");
   const [showTrosakPopup, setShowTrosakPopup] = useState(false);
   const [showProdajaPopup, setShowProdajaPopup] = useState(false);
+  const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
   const [prodatiArtikli, setProdatiArtikli] = useState<
     { id: number; kolicina: number; prodId: number }[]
   >([]);
@@ -23,6 +24,12 @@ export default function Home() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
+
+  const [pol, setPol] = useState<string>("");
+  const [grad, setGrad] = useState<string>("");
+  const [starosnaGrupa, setStarosnaGrupa] = useState<string>("");
+
+  const starosneGrupe = ["0-18", "19-25", "26-35", "36-45", "46-60", "60+"];
 
   interface MenuItem {
     id: number;
@@ -112,7 +119,7 @@ export default function Home() {
     setShowProdajaPopup(true);
   };
 
-  const handleProdajaPotvrda = async () => {
+  const handleProdajaPotvrda = () => {
     if (prodatiArtikli.length === 0) {
       toast.error("Izaberite bar jedan artikal!");
       return;
@@ -125,13 +132,30 @@ export default function Home() {
       return;
     }
 
+    setShowProdajaPopup(false);
+    setShowAdditionalInfoPopup(true);
+  };
+
+  const handleAdditionalInfoSubmit = async (skip: boolean = false) => {
+    const salesData: any = {
+      artikli: prodatiArtikli,
+    };
+
+    if (!skip) {
+      if (pol) salesData.pol = pol;
+      if (grad) salesData.grad = grad;
+      if (starosnaGrupa) salesData.starosnaGrupa = starosnaGrupa;
+    }
+
+    console.log("Submitting sales data:", salesData); // Debugging line
+
     try {
       const response = await fetch("/api/sales", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(validSales),
+        body: JSON.stringify(salesData),
       });
 
       if (!response.ok) {
@@ -142,13 +166,15 @@ export default function Home() {
       toast.success("Prodaja je uspešno sačuvana!");
       console.log("Saved sales data:", result);
       setProdatiArtikli([]);
-      setShowProdajaPopup(false);
+      setPol("");
+      setGrad("");
+      setStarosnaGrupa("");
+      setShowAdditionalInfoPopup(false);
     } catch (error) {
       toast.error("Došlo je do greške prilikom čuvanja prodaje!");
       console.error("Error saving sales:", error);
     }
   };
-
   const handleArtikalChange = (id: number, value: string, prodId: number) => {
     const kolicina = value === "" ? 0 : parseInt(value);
     setProdatiArtikli((prev) => {
@@ -183,7 +209,7 @@ export default function Home() {
         transition={{ duration: 0.5 }}
         className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8"
       >
-        <h1 className="text-4xl font-bold text-green-6  00 mb-6 text-center">
+        <h1 className="text-4xl font-bold text-green-600 mb-6 text-center">
           Dobrodošli!
         </h1>
         <p className="text-gray-600 mb-8 text-center">
@@ -322,6 +348,91 @@ export default function Home() {
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                 >
                   Potvrdi Prodaju
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {showAdditionalInfoPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          >
+            <div className="bg-white p-8 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-4">Dodatne Informacije</h2>
+              <div className="mb-4">
+                <label
+                  htmlFor="pol"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Pol
+                </label>
+                <select
+                  id="pol"
+                  value={pol}
+                  onChange={(e) => setPol(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Izaberite pol</option>
+                  <option value="muški">Muški</option>
+                  <option value="ženski">Ženski</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="grad"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Grad
+                </label>
+                <input
+                  type="text"
+                  id="grad"
+                  value={grad}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[0-9]/g, ""); // Remove numbers
+                    setGrad(value);
+                  }}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Unesite grad"
+                />
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="starosnaGrupa"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Starosna Grupa
+                </label>
+                <select
+                  id="starosnaGrupa"
+                  value={starosnaGrupa}
+                  onChange={(e) => setStarosnaGrupa(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Izaberite starosnu grupu</option>
+                  {starosneGrupe.map((grupa) => (
+                    <option key={grupa} value={grupa}>
+                      {grupa}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => handleAdditionalInfoSubmit(true)}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  Preskoči
+                </button>
+                <button
+                  onClick={() => handleAdditionalInfoSubmit(false)}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Potvrdi
                 </button>
               </div>
             </div>
