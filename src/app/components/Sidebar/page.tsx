@@ -7,7 +7,7 @@ import {
   IoInformationCircleOutline,
   IoChevronForwardOutline,
   IoChevronBackOutline,
-  IoNotificationsOutline, // Dodata ikona za notifikacije
+  IoNotificationsOutline,
 } from "react-icons/io5";
 import Link from "next/link";
 import { LogoutButton } from "@/app/util/LogoutButon";
@@ -39,7 +39,7 @@ const Sidebar: React.FC = () => {
       path: "/notifications",
       icon: IoNotificationsOutline,
       label: "Notifications",
-    }, // Dodata stavka za notifikacije
+    },
   ];
 
   return (
@@ -80,7 +80,6 @@ const Sidebar: React.FC = () => {
             )}
           </motion.button>
           <nav className="flex-1 mt-8">
-            <LogoutButton />
             {menuItems.map(({ path, icon: Icon, label }) => (
               <Link key={path} href={path}>
                 <motion.div
@@ -105,6 +104,13 @@ const Sidebar: React.FC = () => {
               </Link>
             ))}
           </nav>
+          <div
+            className={`mt-auto mb-4 ${
+              isMobile && !isExpanded ? "hidden" : "block"
+            }`}
+          >
+            <LogoutButton isExpanded={isExpanded} />
+          </div>
         </div>
       </motion.div>
     </>
