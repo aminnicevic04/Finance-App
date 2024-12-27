@@ -14,9 +14,13 @@ export async function POST(request: Request) {
   }
 
   const userId = parseInt(session?.user?.id);
-  const salesData = await request.json();
+  const salesDataToSend = await request.json();
 
   try {
+    const salesData = salesDataToSend.salesData;
+    const kupacInfo = salesDataToSend.kupacInfo;
+    console.log(kupacInfo);
+
     // Get the user's current rekordProdaja (record sales)
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -28,6 +32,32 @@ export async function POST(request: Request) {
         error: "User not found",
       });
     }
+
+    //  // Proveri da li kupac već postoji
+    //  const existingKupac = await prisma.kupci.findUnique({
+    //   where: {
+    //     userId: userId,
+    //     pol: kupacInfo.pol,
+    //     grad: kupacInfo.grad,
+    //     starosnaGrupa: kupacInfo.starosnaGrupa,
+    //   },
+    // });
+
+    // let kupacId;
+    // if (existingKupac) {
+    //   // Ako kupac već postoji, koristimo njegov ID
+    //   kupacId = existingKupac.id;
+    // }
+    // Ako kupac ne postoji, kreiraj novog kupca
+    const newKupac = await prisma.kupci.create({
+      data: {
+        pol: kupacInfo.pol,
+        starosnaGrupa: kupacInfo.starosnaGrupa,
+        Grad: kupacInfo.grad,
+        userId: userId,
+      },
+    });
+    // kupacId = newKupac.id;
 
     let newRecord = false;
 

@@ -137,14 +137,24 @@ export default function Home() {
   };
 
   const handleAdditionalInfoSubmit = async (skip: boolean = false) => {
-    const salesData: any = {
-      artikli: prodatiArtikli,
+    let kupacInfo: any = {
+      pol: pol,
+      grad: grad,
+      starosnaGrupa: starosnaGrupa,
+    };
+    let salesData = {
+      sale: prodatiArtikli,
+    };
+
+    let salesDataToSend = {
+      kupacInfo: kupacInfo,
+      salesData: prodatiArtikli,
     };
 
     if (!skip) {
-      if (pol) salesData.pol = pol;
-      if (grad) salesData.grad = grad;
-      if (starosnaGrupa) salesData.starosnaGrupa = starosnaGrupa;
+      if (pol) kupacInfo.pol = pol;
+      if (grad) kupacInfo.grad = grad;
+      if (starosnaGrupa) kupacInfo.starosnaGrupa = starosnaGrupa;
     }
 
     console.log("Submitting sales data:", salesData); // Debugging line
@@ -155,7 +165,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(salesData),
+        body: JSON.stringify(salesDataToSend),
       });
 
       if (!response.ok) {

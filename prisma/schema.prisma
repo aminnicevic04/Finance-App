@@ -25,10 +25,24 @@ model User {
   notifications Notification[]
   products   Product[]
   categories Category[]
+  kupci Kupci[]
   expenseCategory ExpenseCategory[] 
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 }
+
+model Kupci{
+  id Int @id @default(autoincrement())
+  pol String
+  starosnaGrupa String
+  Grad String
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+   createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+
 
 model ExpenseCategory {
   id        Int       @id @default(autoincrement())

@@ -14,6 +14,7 @@ import {
 import Select from "react-select";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import toast from "react-hot-toast";
 
 ChartJS.register(
   ArcElement,
@@ -68,6 +69,10 @@ const StatsPage: React.FC = () => {
     undefined
   );
 
+  const [genderData, setGenderData] = useState<any>([]);
+  const [ageGroupData, setAgeGroupData] = useState<any>([]);
+  const [cityData, setCityData] = useState<any>([]);
+
   const years = [
     { value: 2023, label: "2023" },
     { value: 2024, label: "2024" },
@@ -86,9 +91,16 @@ const StatsPage: React.FC = () => {
     { value: 10, label: "Novembar" },
     { value: 11, label: "Decembar" },
   ];
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setIsMounted(true);
+    if (typeof window !== "undefined") {
+      setIsMounted(true); // Set the mounted state only when in the browser
+    }
+  }, []);
+
+  useEffect(() => {
+    // setIsMounted(true);
     const currentDate = new Date();
     setSelectedMonth(currentDate.getMonth()); // 0-indexed month
     setSelectedYear(currentDate.getFullYear()); // current year
@@ -196,49 +208,130 @@ const StatsPage: React.FC = () => {
     };
   }, [expenseSummary]);
 
+  useEffect(() => {
+    // setIsMounted(true);
+
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/kupci"); // Poziv API rute
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("Podaci nisu u očekivanom formatu");
+        }
+
+        // Obrađivanje podataka za gender
+        const genderStats = data.reduce((acc: any, kupac: any) => {
+          if (kupac.pol) {
+            acc[kupac.pol] = (acc[kupac.pol] || 0) + 1;
+          }
+          return acc;
+        }, {});
+
+        setGenderData({
+          labels: Object.keys(genderStats),
+          datasets: [
+            {
+              data: Object.values(genderStats),
+              backgroundColor: ["#FF6384", "#36A2EB"],
+            },
+          ],
+        });
+
+        // Obrađivanje podataka za starosne grupe
+        const ageGroupStats = data.reduce((acc: any, kupac: any) => {
+          if (kupac.starosnaGrupa) {
+            acc[kupac.starosnaGrupa] = (acc[kupac.starosnaGrupa] || 0) + 1;
+          }
+          return acc;
+        }, {});
+
+        setAgeGroupData({
+          labels: Object.keys(ageGroupStats),
+          datasets: [
+            {
+              label: "Starosne grupe",
+              data: Object.values(ageGroupStats),
+              backgroundColor: "#36A2EB",
+            },
+          ],
+        });
+
+        // Obrađivanje podataka za gradove
+        const cityStats = data.reduce((acc: any, kupac: any) => {
+          if (kupac.Grad) {
+            acc[kupac.Grad] = (acc[kupac.Grad] || 0) + 1;
+          }
+          return acc;
+        }, {});
+
+        setCityData({
+          labels: Object.keys(cityStats),
+          datasets: [
+            {
+              label: "Gradovi",
+              data: Object.values(cityStats),
+              backgroundColor: "#FFCE56",
+            },
+          ],
+        });
+        setLoading(false);
+      } catch (error) {
+        toast.error("Došlo je do greške pri učitavanju podataka.");
+        console.error("Error fetching kupci data:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+  if (loading) {
+    return <div>Loading...</div>; // Consistent with SSR output
+  }
+
   // Mock data for marketing charts
-  const genderData = {
-    labels: ["Muški", "Ženski"],
-    datasets: [
-      {
-        data: [60, 40], // Mock data
-        backgroundColor: ["rgba(75, 192, 192, 0.8)", "rgba(255, 99, 132, 0.8)"],
-      },
-    ],
-  };
+  // const genderData1 = {
+  //   labels: ["Muški", "Ženski"],
+  //   datasets: [
+  //     {
+  //       data: [60, 40], // Mock data
+  //       backgroundColor: ["rgba(75, 192, 192, 0.8)", "rgba(255, 99, 132, 0.8)"],
+  //     },
+  //   ],
+  // };
 
-  const ageGroupData = {
-    labels: ["0-18", "19-25", "26-35", "36-45", "46-60", "60+"],
-    datasets: [
-      {
-        data: [10, 20, 30, 25, 10, 5], // Mock data
-        backgroundColor: [
-          "rgba(75, 192, 192, 0.8)",
-          "rgba(54, 162, 235, 0.8)",
-          "rgba(255, 206, 86, 0.8)",
-          "rgba(255, 99, 132, 0.8)",
-          "rgba(153, 102, 255, 0.8)",
-          "rgba(255, 159, 64, 0.8)",
-        ],
-      },
-    ],
-  };
+  // const ageGroupData1 = {
+  //   labels: ["0-18", "19-25", "26-35", "36-45", "46-60", "60+"],
+  //   datasets: [
+  //     {
+  //       data: [10, 20, 30, 25, 10, 5], // Mock data
+  //       backgroundColor: [
+  //         "rgba(75, 192, 192, 0.8)",
+  //         "rgba(54, 162, 235, 0.8)",
+  //         "rgba(255, 206, 86, 0.8)",
+  //         "rgba(255, 99, 132, 0.8)",
+  //         "rgba(153, 102, 255, 0.8)",
+  //         "rgba(255, 159, 64, 0.8)",
+  //       ],
+  //     },
+  //   ],
+  // };
 
-  const cityData = {
-    labels: ["Beograd", "Novi Sad", "Niš", "Kragujevac", "Subotica"],
-    datasets: [
-      {
-        data: [30, 25, 20, 15, 10], // Mock data
-        backgroundColor: [
-          "rgba(75, 192, 192, 0.8)",
-          "rgba(54, 162, 235, 0.8)",
-          "rgba(255, 206, 86, 0.8)",
-          "rgba(255, 99, 132, 0.8)",
-          "rgba(153, 102, 255, 0.8)",
-        ],
-      },
-    ],
-  };
+  // const cityData1 = {
+  //   labels: ["Beograd", "Novi Sad", "Niš", "Kragujevac", "Subotica"],
+  //   datasets: [
+  //     {
+  //       data: [30, 25, 20, 15, 10], // Mock data
+  //       backgroundColor: [
+  //         "rgba(75, 192, 192, 0.8)",
+  //         "rgba(54, 162, 235, 0.8)",
+  //         "rgba(255, 206, 86, 0.8)",
+  //         "rgba(255, 99, 132, 0.8)",
+  //         "rgba(153, 102, 255, 0.8)",
+  //       ],
+  //     },
+  //   ],
+  // };
 
   return (
     <div className="bg-gray-100 min-h-screen p-4">
