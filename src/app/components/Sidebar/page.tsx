@@ -8,6 +8,8 @@ import {
   IoChevronForwardOutline,
   IoChevronBackOutline,
   IoNotificationsOutline,
+  IoCartOutline,
+  IoCalendarOutline,
 } from "react-icons/io5";
 import Link from "next/link";
 import { LogoutButton } from "@/app/util/LogoutButon";
@@ -34,12 +36,14 @@ const Sidebar: React.FC = () => {
     { path: "/", icon: IoHomeOutline, label: "Home" },
     { path: "/stats", icon: IoStatsChartOutline, label: "Statistics" },
     { path: "/edit", icon: IoCreateOutline, label: "Edit" },
-    { path: "/info", icon: IoInformationCircleOutline, label: "Info" },
+    { path: "/order", icon: IoCartOutline, label: "Order Page" },
+    { path: "/today-work", icon: IoCalendarOutline, label: "Today Work" },
     {
       path: "/notifications",
       icon: IoNotificationsOutline,
       label: "Notifications",
     },
+    { path: "/info", icon: IoInformationCircleOutline, label: "Info" },
   ];
 
   return (

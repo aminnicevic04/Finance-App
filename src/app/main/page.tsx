@@ -14,6 +14,7 @@ export default function Home() {
   const [trosak, setTrosak] = useState("");
   const [showTrosakPopup, setShowTrosakPopup] = useState(false);
   const [showProdajaPopup, setShowProdajaPopup] = useState(false);
+  const [showOrderPopup, setShowOrderPopup] = useState(false);
   const [showAdditionalInfoPopup, setShowAdditionalInfoPopup] = useState(false);
   const [prodatiArtikli, setProdatiArtikli] = useState<
     { id: number; kolicina: number; prodId: number }[]
@@ -24,6 +25,9 @@ export default function Home() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
+  const [orderDescription, setOrderDescription] = useState("");
+  const [orderDate, setOrderDate] = useState("");
+  const [orderTime, setOrderTime] = useState("");
 
   const [pol, setPol] = useState<string>("");
   const [grad, setGrad] = useState<string>("");
@@ -119,6 +123,43 @@ export default function Home() {
     setShowProdajaPopup(true);
   };
 
+  const handleOrderSubmit = () => {
+    setShowOrderPopup(true);
+  };
+
+  const handleOrderPotvrda = async () => {
+    try {
+      const orderData = {
+        products: prodatiArtikli,
+        description: orderDescription,
+        orderDate: orderDate,
+        orderTime: orderTime,
+      };
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Došlo je do greške prilikom čuvanja porudžbine!");
+      }
+
+      toast.success("Porudžbina je uspešno sačuvana!");
+      setShowOrderPopup(false);
+      setProdatiArtikli([]);
+      setOrderDescription("");
+      setOrderDate("");
+      setOrderTime("");
+    } catch (error) {
+      toast.error("Došlo je do greške prilikom čuvanja porudžbine!");
+      console.error("Error saving order:", error);
+    }
+  };
+
   const handleProdajaPotvrda = () => {
     if (prodatiArtikli.length === 0) {
       toast.error("Izaberite bar jedan artikal!");
@@ -157,8 +198,6 @@ export default function Home() {
       if (starosnaGrupa) kupacInfo.starosnaGrupa = starosnaGrupa;
     }
 
-    console.log("Submitting sales data:", salesData); // Debugging line
-
     try {
       const response = await fetch("/api/sales", {
         method: "POST",
@@ -174,7 +213,6 @@ export default function Home() {
 
       const result = await response.json();
       toast.success("Prodaja je uspešno sačuvana!");
-      console.log("Saved sales data:", result);
       setProdatiArtikli([]);
       setPol("");
       setGrad("");
@@ -185,6 +223,7 @@ export default function Home() {
       console.error("Error saving sales:", error);
     }
   };
+
   const handleArtikalChange = (id: number, value: string, prodId: number) => {
     const kolicina = value === "" ? 0 : parseInt(value);
     setProdatiArtikli((prev) => {
@@ -263,6 +302,15 @@ export default function Home() {
             className="w-full bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 transition duration-300 font-semibold"
           >
             Dodaj Prodaju
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleOrderSubmit}
+            className="w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-600 transition duration-300 font-semibold"
+          >
+            Dodaj Porudžbinu
           </motion.button>
         </div>
       </motion.div>
@@ -364,6 +412,86 @@ export default function Home() {
           </motion.div>
         )}
 
+        {showOrderPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          >
+            <div className="bg-white p-8 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-4">Nova Porudžbina</h2>
+              {menuSections.map((category) => (
+                <div key={category.id} className="mb-4">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {category.name}
+                  </h3>
+                  {category.products.map((section) => (
+                    <div
+                      key={section.id}
+                      className="flex justify-between items-center mb-2"
+                    >
+                      <span className="text-gray-700">
+                        {section.name} - {section.price} RSD
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={
+                          prodatiArtikli.find((a) => a.id === section.id)
+                            ?.kolicina || ""
+                        }
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          handleArtikalChange(section.id, value, section.id);
+                        }}
+                        className="w-20 px-2 py-1 border rounded text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div className="space-y-4 mt-4">
+                <textarea
+                  value={orderDescription}
+                  onChange={(e) => setOrderDescription(e.target.value)}
+                  placeholder="Opis porudžbine"
+                  className="w-full px-4 py-2 rounded-md border border-gray-300"
+                  rows={3}
+                />
+                <input
+                  type="date"
+                  value={orderDate}
+                  onChange={(e) => setOrderDate(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300"
+                />
+                <input
+                  type="time"
+                  value={orderTime}
+                  onChange={(e) => setOrderTime(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300"
+                />
+              </div>
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowOrderPopup(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  Otkaži
+                </button>
+                <button
+                  onClick={handleOrderPotvrda}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Potvrdi Porudžbinu
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {showAdditionalInfoPopup && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -403,7 +531,7 @@ export default function Home() {
                   id="grad"
                   value={grad}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/[0-9]/g, ""); // Remove numbers
+                    const value = e.target.value.replace(/[0-9]/g, "");
                     setGrad(value);
                   }}
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
