@@ -72,6 +72,20 @@ const StatsPage: React.FC = () => {
   const [genderData, setGenderData] = useState<any>([]);
   const [ageGroupData, setAgeGroupData] = useState<any>([]);
   const [cityData, setCityData] = useState<any>([]);
+  const [ageGroupSpending, setAgeGroupSpending] = useState({
+    labels: ["18-25", "26-35", "36-45", "46+"],
+    datasets: [
+      {
+        data: [3500, 7800, 12500, 9200],
+        backgroundColor: [
+          "rgba(75, 192, 192, 0.8)",
+          "rgba(54, 162, 235, 0.8)",
+          "rgba(255, 206, 86, 0.8)",
+          "rgba(255, 99, 132, 0.8)",
+        ],
+      },
+    ],
+  });
 
   const years = [
     { value: 2023, label: "2023" },
@@ -95,15 +109,14 @@ const StatsPage: React.FC = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setIsMounted(true); // Set the mounted state only when in the browser
+      setIsMounted(true);
     }
   }, []);
 
   useEffect(() => {
-    // setIsMounted(true);
     const currentDate = new Date();
-    setSelectedMonth(currentDate.getMonth()); // 0-indexed month
-    setSelectedYear(currentDate.getFullYear()); // current year
+    setSelectedMonth(currentDate.getMonth());
+    setSelectedYear(currentDate.getFullYear());
   }, []);
 
   useEffect(() => {
@@ -134,9 +147,7 @@ const StatsPage: React.FC = () => {
 
     fetchData();
   }, [selectedMonth, selectedYear]);
-  console.log(salesData);
 
-  // Group sales data by product name and sum their amounts
   const groupedSalesData = React.useMemo(() => {
     const saleCounts: Record<
       string,
@@ -154,14 +165,11 @@ const StatsPage: React.FC = () => {
     return Object.values(saleCounts);
   }, [salesData]);
 
-  // Process the grouped sales data for the Doughnut chart
   const doughnutSalesData = React.useMemo(() => {
-    // Sort the products by sales count and take the top 4
     const sortedProducts = groupedSalesData
       .sort((a, b) => b.totalAmount - a.totalAmount)
       .slice(0, 4);
 
-    // Extract labels and data for the Doughnut chart
     const labels = sortedProducts.map(({ product }) => product.name);
     const data = sortedProducts.map(({ totalAmount }) => totalAmount);
 
@@ -181,14 +189,11 @@ const StatsPage: React.FC = () => {
     };
   }, [groupedSalesData]);
 
-  // Process the grouped expense data for the Doughnut chart
   const doughnutExpenseData = React.useMemo(() => {
-    // Sort the categories by expense amount and take the top 4
     const sortedCategories = expenseSummary
       .sort((a, b) => b.totalExpense - a.totalExpense)
       .slice(0, 4);
 
-    // Extract labels and data for the Doughnut chart
     const labels = sortedCategories.map(({ categoryName }) => categoryName);
     const data = sortedCategories.map(({ totalExpense }) => totalExpense);
 
@@ -209,18 +214,15 @@ const StatsPage: React.FC = () => {
   }, [expenseSummary]);
 
   useEffect(() => {
-    // setIsMounted(true);
-
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/kupci"); // Poziv API rute
+        const response = await fetch("/api/kupci");
         const data = await response.json();
 
         if (!Array.isArray(data)) {
           throw new Error("Podaci nisu u očekivanom formatu");
         }
 
-        // Obrađivanje podataka za gender
         const genderStats = data.reduce((acc: any, kupac: any) => {
           if (kupac.pol) {
             acc[kupac.pol] = (acc[kupac.pol] || 0) + 1;
@@ -238,7 +240,6 @@ const StatsPage: React.FC = () => {
           ],
         });
 
-        // Obrađivanje podataka za starosne grupe
         const ageGroupStats = data.reduce((acc: any, kupac: any) => {
           if (kupac.starosnaGrupa) {
             acc[kupac.starosnaGrupa] = (acc[kupac.starosnaGrupa] || 0) + 1;
@@ -252,12 +253,16 @@ const StatsPage: React.FC = () => {
             {
               label: "Starosne grupe",
               data: Object.values(ageGroupStats),
-              backgroundColor: "#36A2EB",
+              backgroundColor: [
+                "rgba(75, 192, 192, 0.8)",
+                "rgba(54, 162, 235, 0.8)",
+                "rgba(255, 206, 86, 0.8)",
+                "rgba(255, 99, 132, 0.8)",
+              ],
             },
           ],
         });
 
-        // Obrađivanje podataka za gradove
         const cityStats = data.reduce((acc: any, kupac: any) => {
           if (kupac.Grad) {
             acc[kupac.Grad] = (acc[kupac.Grad] || 0) + 1;
@@ -271,7 +276,12 @@ const StatsPage: React.FC = () => {
             {
               label: "Gradovi",
               data: Object.values(cityStats),
-              backgroundColor: "#FFCE56",
+              backgroundColor: [
+                "rgba(75, 192, 192, 0.8)",
+                "rgba(54, 162, 235, 0.8)",
+                "rgba(255, 206, 86, 0.8)",
+                "rgba(255, 99, 132, 0.8)",
+              ],
             },
           ],
         });
@@ -285,53 +295,10 @@ const StatsPage: React.FC = () => {
 
     fetchData();
   }, []);
+
   if (loading) {
-    return <div>Loading...</div>; // Consistent with SSR output
+    return <div>Loading...</div>;
   }
-
-  // Mock data for marketing charts
-  // const genderData1 = {
-  //   labels: ["Muški", "Ženski"],
-  //   datasets: [
-  //     {
-  //       data: [60, 40], // Mock data
-  //       backgroundColor: ["rgba(75, 192, 192, 0.8)", "rgba(255, 99, 132, 0.8)"],
-  //     },
-  //   ],
-  // };
-
-  // const ageGroupData1 = {
-  //   labels: ["0-18", "19-25", "26-35", "36-45", "46-60", "60+"],
-  //   datasets: [
-  //     {
-  //       data: [10, 20, 30, 25, 10, 5], // Mock data
-  //       backgroundColor: [
-  //         "rgba(75, 192, 192, 0.8)",
-  //         "rgba(54, 162, 235, 0.8)",
-  //         "rgba(255, 206, 86, 0.8)",
-  //         "rgba(255, 99, 132, 0.8)",
-  //         "rgba(153, 102, 255, 0.8)",
-  //         "rgba(255, 159, 64, 0.8)",
-  //       ],
-  //     },
-  //   ],
-  // };
-
-  // const cityData1 = {
-  //   labels: ["Beograd", "Novi Sad", "Niš", "Kragujevac", "Subotica"],
-  //   datasets: [
-  //     {
-  //       data: [30, 25, 20, 15, 10], // Mock data
-  //       backgroundColor: [
-  //         "rgba(75, 192, 192, 0.8)",
-  //         "rgba(54, 162, 235, 0.8)",
-  //         "rgba(255, 206, 86, 0.8)",
-  //         "rgba(255, 99, 132, 0.8)",
-  //         "rgba(153, 102, 255, 0.8)",
-  //       ],
-  //     },
-  //   ],
-  // };
 
   return (
     <div className="bg-gray-100 min-h-screen p-4">
@@ -339,6 +306,8 @@ const StatsPage: React.FC = () => {
         <h1 className="text-2xl font-bold mb-6 text-gray-800">
           Statistika prodaje i potrošnje
         </h1>
+
+        {/* Year/Month Selection */}
         <div className="mb-6 flex flex-wrap gap-2">
           <Select
             options={years}
@@ -385,6 +354,8 @@ const StatsPage: React.FC = () => {
             }}
           />
         </div>
+
+        {/* Sales Distribution */}
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="bg-white p-4 rounded-lg shadow-md lg:w-1/2">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">
@@ -426,6 +397,8 @@ const StatsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Expense Distribution */}
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
           <div className="bg-white p-4 rounded-lg shadow-md lg:w-1/2">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">
@@ -463,6 +436,8 @@ const StatsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Additional Statistics */}
         <div className="mt-6 bg-white p-4 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4 text-gray-700">
             Dodatna Statistika
@@ -495,37 +470,241 @@ const StatsPage: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="mt-6 bg-white p-4 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">
+
+        {/* Marketing Statistics */}
+        <div className="mt-6 bg-white p-6 rounded-xl shadow-md">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">
             Marketing Statistika
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-gray-50 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700">Pol</h3>
-              {isMounted && (
-                <div className="w-full max-w-xs mx-auto">
-                  <DynamicDoughnut data={genderData} />
-                </div>
-              )}
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                Starosne Grupe
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Gender Distribution */}
+            <div className="bg-gray-50 p-6 rounded-xl shadow hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-xl font-semibold text-gray-700 mb-6 text-center">
+                Distribucija po polu
               </h3>
               {isMounted && (
-                <div className="w-full max-w-xs mx-auto">
-                  <DynamicBar data={ageGroupData} />
-                </div>
+                <>
+                  <div className="w-full max-w-xs mx-auto mb-6">
+                    <DynamicDoughnut
+                      data={genderData}
+                      options={{
+                        plugins: {
+                          legend: { position: "bottom" },
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="overflow-y-auto max-h-64">
+                    <table className="w-full min-w-[300px]">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="text-left py-2 px-4">Pol</th>
+                          <th className="text-right py-2 px-4">Broj kupaca</th>
+                          <th className="text-right py-2 px-4">Procenat</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {genderData.labels?.map(
+                          (label: string, index: number) => {
+                            const total = genderData.datasets[0].data.reduce(
+                              (a: number, b: number) => a + b,
+                              0
+                            );
+                            const percentage = (
+                              (genderData.datasets[0].data[index] / total) *
+                              100
+                            ).toFixed(1);
+                            return (
+                              <tr key={index} className="border-b">
+                                <td className="py-2 px-4">{label}</td>
+                                <td className="text-right py-2 px-4">
+                                  {genderData.datasets[0].data[index]}
+                                </td>
+                                <td className="text-right py-2 px-4">
+                                  {percentage}%
+                                </td>
+                              </tr>
+                            );
+                          }
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                Gradovi
+
+            {/* Age Groups */}
+            <div className="bg-gray-50 p-6 rounded-xl shadow hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-xl font-semibold text-gray-700 mb-6 text-center">
+                Starosne grupe
               </h3>
               {isMounted && (
-                <div className="w-full max-w-xs mx-auto">
-                  <DynamicBar data={cityData} />
-                </div>
+                <>
+                  <div className="w-full max-w-xs mx-auto mb-6">
+                    <DynamicDoughnut
+                      data={ageGroupData}
+                      options={{
+                        plugins: {
+                          legend: { position: "bottom" },
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="overflow-y-auto max-h-64">
+                    <table className="w-full min-w-[300px]">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="text-left py-2 px-4">
+                            Starosna grupa
+                          </th>
+                          <th className="text-right py-2 px-4">Broj kupaca</th>
+                          <th className="text-right py-2 px-4">Procenat</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ageGroupData.labels?.map(
+                          (label: string, index: number) => {
+                            const total = ageGroupData.datasets[0].data.reduce(
+                              (a: number, b: number) => a + b,
+                              0
+                            );
+                            const percentage = (
+                              (ageGroupData.datasets[0].data[index] / total) *
+                              100
+                            ).toFixed(1);
+                            return (
+                              <tr key={index} className="border-b">
+                                <td className="py-2 px-4">{label}</td>
+                                <td className="text-right py-2 px-4">
+                                  {ageGroupData.datasets[0].data[index]}
+                                </td>
+                                <td className="text-right py-2 px-4">
+                                  {percentage}%
+                                </td>
+                              </tr>
+                            );
+                          }
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Average Spending by Age */}
+            <div className="bg-gray-50 p-6 rounded-xl shadow hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-xl font-semibold text-gray-700 mb-6 text-center">
+                Prosečna potrošačka korpa po starosti
+              </h3>
+              {isMounted && (
+                <>
+                  <div className="w-full max-w-xs mx-auto mb-6">
+                    <DynamicDoughnut
+                      data={ageGroupSpending}
+                      options={{
+                        plugins: {
+                          legend: { position: "bottom" },
+                          tooltip: {
+                            callbacks: {
+                              label: (context: any) =>
+                                `${
+                                  context.label
+                                }: ${context.raw.toLocaleString()} RSD`,
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="overflow-y-auto max-h-64">
+                    <table className="w-full min-w-[300px]">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="text-left py-2 px-4">
+                            Starosna grupa
+                          </th>
+                          <th className="text-right py-2 px-4">
+                            Prosečna potrošnja
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ageGroupSpending.labels?.map(
+                          (label: string, index: number) => (
+                            <tr key={index} className="border-b">
+                              <td className="py-2 px-4">{label}</td>
+                              <td className="text-right py-2 px-4">
+                                {ageGroupSpending.datasets[0].data[
+                                  index
+                                ].toLocaleString()}{" "}
+                                RSD
+                              </td>
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* City Distribution */}
+            <div className="bg-gray-50 p-6 rounded-xl shadow hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-xl font-semibold text-gray-700 mb-6 text-center">
+                Distribucija po gradovima
+              </h3>
+              {isMounted && (
+                <>
+                  <div className="w-full max-w-xs mx-auto mb-6">
+                    <DynamicDoughnut
+                      data={cityData}
+                      options={{
+                        plugins: {
+                          legend: { position: "bottom" },
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="overflow-y-auto max-h-64">
+                    <table className="w-full min-w-[300px]">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="text-left py-2 px-4">Grad</th>
+                          <th className="text-right py-2 px-4">Broj kupaca</th>
+                          <th className="text-right py-2 px-4">Procenat</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cityData.labels?.map(
+                          (label: string, index: number) => {
+                            const total = cityData.datasets[0].data.reduce(
+                              (a: number, b: number) => a + b,
+                              0
+                            );
+                            const percentage = (
+                              (cityData.datasets[0].data[index] / total) *
+                              100
+                            ).toFixed(1);
+                            return (
+                              <tr key={index} className="border-b">
+                                <td className="py-2 px-4">{label}</td>
+                                <td className="text-right py-2 px-4">
+                                  {cityData.datasets[0].data[index]}
+                                </td>
+                                <td className="text-right py-2 px-4">
+                                  {percentage}%
+                                </td>
+                              </tr>
+                            );
+                          }
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
