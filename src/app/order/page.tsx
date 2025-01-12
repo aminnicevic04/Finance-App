@@ -1,168 +1,186 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
+interface OrderItem {
+  product: {
+    name: string;
+    price: number;
+  };
+  quantity: number;
+}
 
 interface Order {
-  productName: string;
+  id: number;
   description: string;
   orderDate: string;
   orderTime: string;
-  customerName: string;
-  contactNumber: string;
-  price: number;
+  orderItems: OrderItem[];
 }
 
-const OrderPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+const OrdersPage: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>(""); // For filtering by order description
   const [sortField, setSortField] = useState<
-    "orderDate" | "productName" | "customerName"
+    "orderDate" | "description" | "orderTime"
   >("orderDate");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // Mock data
-  const orders: Order[] = [
-    {
-      productName: "Product 1",
-      description: "Description for product 1",
-      orderDate: "2023-10-01",
-      orderTime: "14:00",
-      customerName: "John Doe",
-      contactNumber: "123-456-7890",
-      price: 100,
-    },
-    {
-      productName: "Product 2",
-      description: "Description for product 2",
-      orderDate: "2023-10-02",
-      orderTime: "15:00",
-      customerName: "Jane Smith",
-      contactNumber: "098-765-4321",
-      price: 150,
-    },
-    {
-      productName: "Product 3",
-      description: "Description for product 3",
-      orderDate: "2023-10-03",
-      orderTime: "16:00",
-      customerName: "Alice Johnson",
-      contactNumber: "111-222-3333",
-      price: 200,
-    },
-    {
-      productName: "Product 4",
-      description: "Description for product 4",
-      orderDate: "2023-10-04",
-      orderTime: "17:00",
-      customerName: "Bob Brown",
-      contactNumber: "444-555-6666",
-      price: 250,
-    },
-    {
-      productName: "Product 5",
-      description: "Description for product 5",
-      orderDate: "2023-10-05",
-      orderTime: "18:00",
-      customerName: "Charlie Davis",
-      contactNumber: "777-888-9999",
-      price: 300,
-    },
-  ];
-
-  const filteredOrders = orders
-    .filter((order) =>
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortOrder === "asc") {
-        return a[sortField].localeCompare(b[sortField]);
-      } else {
-        return b[sortField].localeCompare(a[sortField]);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch("/api/getOrders");
+        if (!res.ok) {
+          throw new Error("Error fetching orders");
+        }
+        const data: Order[] = await res.json();
+        setOrders(data);
+      } catch (err) {
+        setError("Failed to load orders");
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-    });
+    };
 
-  const groupedOrders = filteredOrders.reduce((acc, order) => {
-    const date = order.orderDate;
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(order);
-    return acc;
-  }, {} as Record<string, Order[]>);
+    fetchOrders();
+  }, []);
 
-  const totalOrders = filteredOrders.length;
-  const totalRevenue = filteredOrders.reduce(
-    (acc, order) => acc + order.price,
-    0
+  // Filter orders based on search term (order description)
+  const filteredOrders = orders.filter((order) =>
+    order.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Sort orders based on the selected field and order
+  const sortedOrders = filteredOrders.sort((a, b) => {
+    if (sortOrder === "asc") {
+      return a[sortField] > b[sortField] ? 1 : -1;
+    } else {
+      return a[sortField] < b[sortField] ? 1 : -1;
+    }
+  });
+
+  // Calculate the total cost for each order
+  const calculateTotalOrderCost = (order: Order) => {
+    return order.orderItems.reduce(
+      (total, item) => total + item.product.price * item.quantity,
+      0
+    );
+  };
+
+  const handleSort = (field: "orderDate" | "description" | "orderTime") => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  // Manually format the order date (YYYY-MM-DD)
+  const formatOrderDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = ("0" + (date.getMonth() + 1)).slice(-2); // Add leading zero
+    const day = ("0" + date.getDate()).slice(-2); // Add leading zero
+    return `${year}-${month}-${day}`;
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="p-6 pl-24 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-green-600">Order Page</h1>
+      <h1 className="text-3xl font-bold mb-6 text-green-600">Orders</h1>
+
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center">
           <input
             type="text"
-            placeholder="Search by customer name"
+            placeholder="Search by order description"
             className="p-2 border border-gray-300 rounded"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button
-            className="ml-4 p-2 bg-green-500 text-white rounded"
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-          >
-            Sort by {sortField} (
-            {sortOrder === "asc" ? "Ascending" : "Descending"})
-          </button>
-          <select
-            className="ml-4 p-2 border border-gray-300 rounded"
-            value={sortField}
-            onChange={(e) =>
-              setSortField(
-                e.target.value as "orderDate" | "productName" | "customerName"
-              )
-            }
-          >
-            <option value="orderDate">Order Date</option>
-            <option value="productName">Product Name</option>
-            <option value="customerName">Customer Name</option>
-          </select>
         </div>
         <div className="flex items-center">
-          <span className="mr-4">Total Orders: {totalOrders}</span>
-          <span>Expected Revenue: {totalRevenue} rsd</span>
+          <span className="mr-4">Sort by:</span>
+          <button
+            className="ml-2 p-2 bg-green-500 text-white rounded"
+            onClick={() => handleSort("orderDate")}
+          >
+            Order Date ({sortOrder === "asc" ? "Ascending" : "Descending"})
+          </button>
+          <button
+            className="ml-2 p-2 bg-green-500 text-white rounded"
+            onClick={() => handleSort("description")}
+          >
+            Description ({sortOrder === "asc" ? "Ascending" : "Descending"})
+          </button>
+          <button
+            className="ml-2 p-2 bg-green-500 text-white rounded"
+            onClick={() => handleSort("orderTime")}
+          >
+            Order Time ({sortOrder === "asc" ? "Ascending" : "Descending"})
+          </button>
         </div>
       </div>
-      {Object.keys(groupedOrders).map((date) => (
-        <div key={date} className="mb-6">
-          <h2 className="text-2xl font-semibold mb-2 text-green-700">{date}</h2>
-          <table className="min-w-full bg-white rounded-lg shadow-md">
-            <thead>
-              <tr>
-                <th className="py-2 px-4 border-b text-left">Product Name</th>
-                <th className="py-2 px-4 border-b text-left">Description</th>
-                <th className="py-2 px-4 border-b text-left">Order Time</th>
-                <th className="py-2 px-4 border-b text-left">Customer Name</th>
-                <th className="py-2 px-4 border-b text-left">Contact Number</th>
-                <th className="py-2 px-4 border-b text-left">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupedOrders[date].map((order, index) => (
-                <tr key={index} className="hover:bg-gray-100">
-                  <td className="py-2 px-4 border-b">{order.productName}</td>
-                  <td className="py-2 px-4 border-b">{order.description}</td>
-                  <td className="py-2 px-4 border-b">{order.orderTime}</td>
-                  <td className="py-2 px-4 border-b">{order.customerName}</td>
-                  <td className="py-2 px-4 border-b">{order.contactNumber}</td>
-                  <td className="py-2 px-4 border-b">{order.price} rsd</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+
+      {sortedOrders.length === 0 ? (
+        <p>No orders found.</p>
+      ) : (
+        sortedOrders.map((order) => (
+          <div key={order.id} className="mb-6">
+            <h2 className="text-2xl font-semibold mb-4">{order.description}</h2>
+            <p>
+              <strong>Order Date:</strong> {formatOrderDate(order.orderDate)}{" "}
+              {/* Format here */}
+            </p>
+            <p>
+              <strong>Order Time:</strong> {order.orderTime}
+            </p>
+            <p>
+              <strong>Total Order Cost:</strong>{" "}
+              {calculateTotalOrderCost(order)} rsd
+            </p>
+            <div className="mt-4">
+              <table className="min-w-full bg-white rounded-lg shadow-md">
+                <thead>
+                  <tr>
+                    <th className="py-2 px-4 border-b text-left">
+                      Product Name
+                    </th>
+                    <th className="py-2 px-4 border-b text-left">Quantity</th>
+                    <th className="py-2 px-4 border-b text-left">Price</th>
+                    <th className="py-2 px-4 border-b text-left">
+                      Total Price
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.orderItems.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-100">
+                      <td className="py-2 px-4 border-b">
+                        {item.product.name}
+                      </td>
+                      <td className="py-2 px-4 border-b">{item.quantity}</td>
+                      <td className="py-2 px-4 border-b">
+                        {item.product.price} rsd
+                      </td>
+                      <td className="py-2 px-4 border-b">
+                        {item.product.price * item.quantity} rsd
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 };
 
-export default OrderPage;
+export default OrdersPage;

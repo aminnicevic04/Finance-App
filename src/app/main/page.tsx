@@ -136,7 +136,7 @@ export default function Home() {
         orderTime: orderTime,
       };
 
-      const response = await fetch("/api/orders", {
+      const response = await fetch("/api/createOrder", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
