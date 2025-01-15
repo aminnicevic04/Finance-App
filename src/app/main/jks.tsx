@@ -146,6 +146,51 @@ export default function Home() {
     setShowAdditionalInfoPopup(true);
   };
 
+  const handleOrderWithInfoSubmit = async (skip: boolean = false) => {
+    let kupacInfo: any = {
+      pol: pol,
+      grad: grad,
+      starosnaGrupa: starosnaGrupa,
+    };
+
+    let orderDataToSend = {
+      kupacInfo: skip ? {} : kupacInfo,
+      orderData: {
+        products: prodatiArtikli,
+        description: orderDescription,
+        orderDate: orderDate,
+        orderTime: orderTime,
+      },
+    };
+
+    try {
+      const response = await fetch("/api/createOrder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderDataToSend),
+      });
+
+      if (!response.ok) {
+        throw new Error("Došlo je do greške prilikom čuvanja porudžbine!");
+      }
+
+      toast.success("Porudžbina je uspešno sačuvana!");
+      setShowAdditionalInfoPopup(false);
+      setProdatiArtikli([]);
+      setOrderDescription("");
+      setOrderDate("");
+      setOrderTime("");
+      setPol("");
+      setGrad("");
+      setStarosnaGrupa("");
+    } catch (error: any) {
+      toast.error("Došlo je do greške prilikom čuvanja porudžbine!");
+      console.error("Error saving order:", error);
+    }
+  };
+
   const handleProdajaPotvrda = () => {
     if (prodatiArtikli.length === 0) {
       toast.error("Izaberite bar jedan artikal!");
@@ -547,13 +592,13 @@ export default function Home() {
               </div>
               <div className="mt-4 flex justify-end space-x-2">
                 <button
-                  onClick={() => handleAdditionalInfoSubmit(true)}
+                  onClick={() => handleOrderWithInfoSubmit(true)}
                   className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
                 >
                   Preskoči
                 </button>
                 <button
-                  onClick={() => handleAdditionalInfoSubmit(false)}
+                  onClick={() => handleOrderWithInfoSubmit(false)}
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                 >
                   Potvrdi
